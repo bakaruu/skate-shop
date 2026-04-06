@@ -36,6 +36,18 @@ services:
     volumes:
       - postgres-order-data:/var/lib/postgresql/data
 
+  postgres-payment:
+    image: postgres:16
+    container_name: postgres-payment
+    environment:
+      POSTGRES_DB: payment_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5435:5432"
+    volumes:
+      - postgres-payment-data:/var/lib/postgresql/data
+
   zookeeper:
     image: confluentinc/cp-zookeeper:7.5.0
     container_name: zookeeper
@@ -67,3 +79,4 @@ volumes:
   postgres-product-data:
   postgres-inventory-data:
   postgres-order-data:
+  postgres-payment-data:
