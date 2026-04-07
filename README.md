@@ -20,7 +20,6 @@ Authentication and JWT security are intentionally out of scope for this project 
 This project focuses on microservices architecture, event-driven communication and payment integration. In a production environment, an authentication service would sit behind the API Gateway handling JWT validation before routing requests to downstream services.---
 
 
----
 ## ⚙️ Tech Stack
 
 | Technology | |
