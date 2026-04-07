@@ -1,0 +1,76 @@
+.catalog {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  gap: 2rem;
+  padding: 2rem;
+  min-height: calc(100vh - 64px);
+  background: #050507;
+
+  &__filters {
+    h2 {
+      color: #c8a96e;
+      font-size: 0.8rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      margin-bottom: 1.5rem;
+    }
+  }
+
+  &__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 1.5rem;
+    align-content: start;
+  }
+}
+
+.filter-group {
+  margin-bottom: 1.5rem;
+
+  label {
+    display: block;
+    font-size: 0.75rem;
+    letter-spacing: 0.1em;
+    color: #888;
+    text-transform: uppercase;
+    margin-bottom: 0.5rem;
+  }
+
+  input, select {
+    width: 100%;
+    background: #0d0d0f;
+    border: 1px solid #c8a96e33;
+    color: #f0ede6;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.9rem;
+    outline: none;
+
+    &:focus {
+      border-color: #c8a96e;
+    }
+  }
+}
+
+.btn-clear {
+  width: 100%;
+  background: transparent;
+  border: 1px solid #c8a96e33;
+  color: #888;
+  padding: 0.5rem;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    border-color: #c8a96e;
+    color: #c8a96e;
+  }
+}
+
+.loading, .empty {
+  color: #888;
+  font-size: 0.9rem;
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 4rem;
+}

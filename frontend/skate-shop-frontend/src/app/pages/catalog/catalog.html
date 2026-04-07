@@ -1,1 +1,52 @@
-<p>catalog works!</p>
+<div class="catalog">
+  <aside class="catalog__filters">
+    <h2>Filters</h2>
+
+    <div class="filter-group">
+      <label>Category</label>
+      <select [(ngModel)]="filter.category" (change)="onFilterChange()">
+        <option value="">All</option>
+        @for (cat of categories; track cat) {
+          <option [value]="cat">{{ cat }}</option>
+        }
+      </select>
+    </div>
+
+    <div class="filter-group">
+      <label>Brand</label>
+      <input
+        type="text"
+        [(ngModel)]="filter.brand"
+        (input)="onFilterChange()"
+        placeholder="Search brand..."
+      />
+    </div>
+
+    <div class="filter-group">
+      <label>Min price</label>
+      <input type="number" [(ngModel)]="filter.minPrice" (change)="onFilterChange()" />
+    </div>
+
+    <div class="filter-group">
+      <label>Max price</label>
+      <input type="number" [(ngModel)]="filter.maxPrice" (change)="onFilterChange()" />
+    </div>
+
+    <button class="btn-clear" (click)="clearFilters()">Clear filters</button>
+  </aside>
+
+  <main class="catalog__grid">
+    @if (loading()) {
+      <div class="loading">Loading products...</div>
+    } @else if (products().length === 0) {
+      <div class="empty">No products found.</div>
+    } @else {
+      @for (product of products(); track product.id) {
+        <app-product-card
+          [product]="product"
+          (addToCart)="onAddToCart($event)"
+        />
+      }
+    }
+  </main>
+</div>

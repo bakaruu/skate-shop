@@ -1,1 +1,14 @@
-<p>navbar works!</p>
+<nav class="navbar">
+  <div class="navbar__brand">
+    <a routerLink="/">SKATE SHOP</a>
+  </div>
+  <div class="navbar__links">
+    <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">Catalog</a>
+    <a routerLink="/cart" routerLinkActive="active">
+      Cart
+      @if (cartService.itemCount() > 0) {
+        <span class="badge">{{ cartService.itemCount() }}</span>
+      }
+    </a>
+  </div>
+</nav>
