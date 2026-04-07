@@ -5,18 +5,20 @@
       <span class="catalog__count">{{ products().length }} products</span>
     </div>
     <div class="catalog__filters">
+
       <select [(ngModel)]="filter.category" (change)="onFilterChange()">
         <option value="">All Categories</option>
         @for (cat of categories; track cat) {
           <option [value]="cat">{{ cat }}</option>
         }
       </select>
-      <input
-        type="text"
-        [(ngModel)]="filter.brand"
-        (input)="onFilterChange()"
-        placeholder="Brand"
-      />
+
+      <select [(ngModel)]="filter.brand" (change)="onFilterChange()">
+        <option value="">All Brands</option>
+        @for (brand of brands(); track brand) {
+          <option [value]="brand">{{ brand }}</option>
+        }
+      </select>
       <input
         type="number"
         [(ngModel)]="filter.minPrice"

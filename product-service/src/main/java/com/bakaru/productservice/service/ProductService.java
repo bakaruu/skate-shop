@@ -104,4 +104,14 @@ public class ProductService {
         productRepository.save(product);
         log.info("Product {} deactivated", id);
     }
+
+
+    public List<String> getAllBrands() {
+        return productRepository.findAll().stream()
+                .filter(Product::getActive)
+                .map(Product::getBrand)
+                .distinct()
+                .sorted()
+                .toList();
+    }
 }

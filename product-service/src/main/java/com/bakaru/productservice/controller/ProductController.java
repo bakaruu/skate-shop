@@ -55,4 +55,9 @@ public class ProductController {
         productService.deleteProduct(id);
         return ResponseEntity.noContent().build();
     }
+
+    @GetMapping("/brands")
+    public ResponseEntity<List<String>> getBrands() {
+        return ResponseEntity.ok(productService.getAllBrands());
+    }
 }

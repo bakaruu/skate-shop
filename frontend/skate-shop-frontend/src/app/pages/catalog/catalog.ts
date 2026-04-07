@@ -16,7 +16,11 @@ export class CatalogComponent implements OnInit {
 
   products = signal<Product[]>([]);
   loading = signal(true);
-  filter: ProductFilter = {};
+  brands = signal<string[]>([]);
+  filter: ProductFilter = {
+    category: '',
+    brand: ''
+  };
   categories = ['DECK', 'TRUCKS', 'WHEELS'];
 
   constructor(
@@ -26,6 +30,13 @@ export class CatalogComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadProducts();
+    this.loadBrands();
+  }
+
+  loadBrands(): void {
+    this.productService.getBrands().subscribe({
+      next: (brands) => this.brands.set(brands)
+    });
   }
 
   loadProducts(): void {
