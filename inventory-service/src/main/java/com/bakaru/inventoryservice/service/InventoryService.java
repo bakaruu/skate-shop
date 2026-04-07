@@ -11,6 +11,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -69,5 +71,13 @@ public class InventoryService {
         inventory.setQuantity(inventory.getQuantity() + quantity);
         inventoryRepository.save(inventory);
         log.info("Stock increased for product {} by {}", productId, quantity);
+    }
+
+
+    public List<InventoryResponse> getByProductIds(List<Long> productIds) {
+        return inventoryRepository.findByProductIdIn(productIds)
+                .stream()
+                .map(inventoryMapper::toResponse)
+                .toList();
     }
 }

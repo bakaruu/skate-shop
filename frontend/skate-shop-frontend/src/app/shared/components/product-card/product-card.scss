@@ -83,4 +83,20 @@
     font-weight: 600;
     color: #0a0a0a;
   }
+
+  &__stock {
+    font-size: 0.7rem;
+    color: #999;
+
+    &.out-of-stock {
+      color: #e05252;
+    }
+  }
+
+  &__footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 0.6rem;
+  }
 }

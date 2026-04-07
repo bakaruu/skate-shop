@@ -9,6 +9,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/inventory")
 @RequiredArgsConstructor
@@ -33,5 +35,12 @@ public class InventoryController {
             @PathVariable Long productId,
             @RequestParam Integer quantity) {
         return ResponseEntity.ok(inventoryService.updateStock(productId, quantity));
+    }
+
+
+    @GetMapping("/batch")
+    public ResponseEntity<List<InventoryResponse>> getByProductIds(
+            @RequestParam List<Long> productIds) {
+        return ResponseEntity.ok(inventoryService.getByProductIds(productIds));
     }
 }

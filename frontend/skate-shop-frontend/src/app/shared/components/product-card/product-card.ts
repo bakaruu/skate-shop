@@ -11,6 +11,7 @@ import { Product } from '../../../core/models/product.model';
 })
 export class ProductCardComponent {
   @Input() product!: Product;
+  @Input() stock: number = 0;
   @Output() addToCart = new EventEmitter<Product>();
 
   onAddToCart(): void {

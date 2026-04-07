@@ -11,6 +11,11 @@
       <span class="product-card__category">{{ product.category }}</span>
     </div>
     <h3 class="product-card__name">{{ product.name }}</h3>
-    <span class="product-card__price">{{ product.price | currency:'EUR' }}</span>
+    <div class="product-card__footer">
+      <span class="product-card__price">{{ product.price | currency:'EUR' }}</span>
+      <span class="product-card__stock" [class.out-of-stock]="stock === 0">
+      {{ stock > 0 ? stock + ' in stock' : 'Out of stock' }}
+    </span>
+    </div>
   </div>
 </div>

@@ -2,6 +2,7 @@ import { Component, OnInit, signal } from '@angular/core';
 import { ProductCardComponent } from '../../shared/components/product-card/product-card';
 import { ProductService } from '../../core/services/product';
 import { CartService } from '../../core/services/cart';
+import { InventoryService, InventoryResponse } from '../../core/services/inventory';
 import { Product, ProductFilter } from '../../core/models/product.model';
 import { FormsModule } from '@angular/forms';
 
@@ -17,15 +18,15 @@ export class CatalogComponent implements OnInit {
   products = signal<Product[]>([]);
   loading = signal(true);
   brands = signal<string[]>([]);
-  filter: ProductFilter = {
-    category: '',
-    brand: ''
-  };
+  inventory = signal<Map<number, number>>(new Map());
+  filter: ProductFilter = { category: '', brand: '' };
   categories = ['DECK', 'TRUCKS', 'WHEELS'];
+  private filterTimer: any;
 
   constructor(
     private productService: ProductService,
-    private cartService: CartService
+    private cartService: CartService,
+    private inventoryService: InventoryService
   ) {}
 
   ngOnInit(): void {
@@ -45,12 +46,22 @@ export class CatalogComponent implements OnInit {
       next: (products) => {
         this.products.set(products);
         this.loading.set(false);
+        this.loadInventory(products.map(p => p.id));
       },
       error: () => this.loading.set(false)
     });
   }
 
-  private filterTimer: any;
+  loadInventory(productIds: number[]): void {
+    if (productIds.length === 0) return;
+    this.inventoryService.getByProductIds(productIds).subscribe({
+      next: (items) => {
+        const map = new Map<number, number>();
+        items.forEach(item => map.set(item.productId, item.available));
+        this.inventory.set(map);
+      }
+    });
+  }
 
   onFilterChange(): void {
     clearTimeout(this.filterTimer);
@@ -64,7 +75,11 @@ export class CatalogComponent implements OnInit {
   }
 
   clearFilters(): void {
-    this.filter = {};
+    this.filter = { category: '', brand: '' };
     this.loadProducts();
+  }
+
+  getStock(productId: number): number {
+    return this.inventory().get(productId) ?? 0;
   }
 }
