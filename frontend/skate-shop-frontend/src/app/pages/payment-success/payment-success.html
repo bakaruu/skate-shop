@@ -1,1 +1,9 @@
-<p>payment-success works!</p>
+<div class="success">
+  <div class="success__icon">✓</div>
+  <h1>Payment Successful</h1>
+  <p>Your order has been placed successfully.</p>
+  @if (sessionId) {
+    <p class="success__session">Session: {{ sessionId }}</p>
+  }
+  <a routerLink="/" class="btn-home">Back to Catalog</a>
+</div>

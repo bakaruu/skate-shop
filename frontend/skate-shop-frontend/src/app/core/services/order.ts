@@ -8,7 +8,7 @@ import { OrderRequest, OrderResponse } from '../models/order.model';
 })
 export class OrderService {
 
-  private apiUrl = 'http://localhost:8080/api/orders';
+  private apiUrl = 'http://localhost:8083/api/orders';
 
   constructor(private http: HttpClient) {}
 

@@ -19,7 +19,7 @@ export interface CheckoutResponse {
 })
 export class PaymentService {
 
-  private apiUrl = 'http://localhost:8080/api/payments';
+  private apiUrl = 'http://localhost:8085/api/payments';
 
   constructor(private http: HttpClient) {}
 
