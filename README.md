@@ -13,6 +13,11 @@ This project consumes a microservices backend built from scratch:
 
 Make sure all backend services are running before starting the frontend.
 
+## 🔐 Authentication
+
+Authentication and JWT security are intentionally out of scope for this project — they are fully demonstrated in [Project 1 — User Management API](https://github.com/bakaruu/user-management-api).
+
+This project focuses on microservices architecture, event-driven communication and payment integration. In a production environment, an authentication service would sit behind the API Gateway handling JWT validation before routing requests to downstream services.
 ---
 
 ## ⚙️ Tech Stack
@@ -123,6 +128,7 @@ Each service exposes Swagger UI:
 | Payment | `http://localhost:8085/swagger-ui.html` |
 
 ---
+
 
 ## 🔑 Test Payment
 
