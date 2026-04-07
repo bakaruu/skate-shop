@@ -1,74 +1,86 @@
 .product-card {
-  background: #0d0d0f;
-  border: 1px solid #c8a96e22;
-  border-radius: 4px;
-  overflow: hidden;
-  transition: border-color 0.2s, transform 0.2s;
+  cursor: pointer;
 
-  &:hover {
-    border-color: #c8a96e66;
-    transform: translateY(-2px);
+  &:hover .product-card__image img {
+    transform: scale(1.04);
+  }
+
+  &:hover .product-card__quick-add {
+    opacity: 1;
+    transform: translateY(0);
   }
 
   &__image {
-    aspect-ratio: 1;
+    position: relative;
+    aspect-ratio: 4/5;
     overflow: hidden;
+    background: #f5f5f5;
+    margin-bottom: 1.2rem;
 
     img {
       width: 100%;
       height: 100%;
       object-fit: cover;
+      transition: transform 0.5s ease;
     }
   }
 
-  &__info {
-    padding: 1rem;
-  }
-
-  &__category {
+  &__quick-add {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: #0a0a0a;
+    color: #ffffff;
+    border: none;
+    padding: 0.9rem;
     font-size: 0.7rem;
-    letter-spacing: 0.1em;
-    color: #c8a96e;
+    font-weight: 700;
+    letter-spacing: 0.15em;
     text-transform: uppercase;
+    cursor: pointer;
+    font-family: 'Inter', sans-serif;
+    opacity: 0;
+    transform: translateY(8px);
+    transition: opacity 0.3s ease, transform 0.3s ease;
   }
 
-  &__name {
-    font-size: 1rem;
-    color: #f0ede6;
-    margin: 0.25rem 0;
+  &__info {
+    padding: 0 0.1rem;
+  }
+
+  &__meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.4rem;
   }
 
   &__brand {
     font-size: 0.8rem;
-    color: #888;
-    margin: 0;
+    font-weight: 600;
+    color: #0a0a0a;
   }
 
-  &__footer {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-top: 1rem;
+  &__category {
+    font-size: 0.65rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #999;
+  }
+
+  &__name {
+    font-size: 0.85rem;
+    font-weight: 400;
+    color: #555;
+    margin-bottom: 0.6rem;
+    line-height: 1.4;
   }
 
   &__price {
-    font-size: 1.1rem;
+    font-size: 0.9rem;
     font-weight: 600;
-    color: #f0ede6;
-  }
-}
-
-.btn-add {
-  background: #c8a96e;
-  color: #050507;
-  border: none;
-  padding: 0.4rem 0.8rem;
-  font-size: 0.8rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.2s;
-
-  &:hover {
-    background: #d4b87a;
+    color: #0a0a0a;
   }
 }

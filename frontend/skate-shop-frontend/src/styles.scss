@@ -5,24 +5,20 @@
 }
 
 body {
-  background: #050507;
-  color: #f0ede6;
+  background: #ffffff;
+  color: #0a0a0a;
   font-family: 'Inter', sans-serif;
   -webkit-font-smoothing: antialiased;
 }
 
 ::-webkit-scrollbar {
-  width: 6px;
+  width: 4px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #050507;
+  background: #f5f5f5;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #c8a96e33;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: #c8a96e66;
+  background: #d0d0d0;
 }
