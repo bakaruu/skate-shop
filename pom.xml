@@ -42,6 +42,30 @@
 		</dependencies>
 	</dependencyManagement>
 
+
+	<build>
+		<pluginManagement>
+			<plugins>
+				<plugin>
+					<groupId>com.google.cloud.tools</groupId>
+					<artifactId>jib-maven-plugin</artifactId>
+					<version>3.4.0</version>
+					<configuration>
+						<from>
+							<image>eclipse-temurin:21-jre-alpine</image>
+						</from>
+						<container>
+							<jvmFlags>
+								<jvmFlag>-Xms256m</jvmFlag>
+								<jvmFlag>-Xmx512m</jvmFlag>
+							</jvmFlags>
+						</container>
+					</configuration>
+				</plugin>
+			</plugins>
+		</pluginManagement>
+	</build>
+
 	<modules>
 		<module>discovery-service</module>
 		<module>api-gateway</module>

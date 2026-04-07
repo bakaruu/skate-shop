@@ -20,9 +20,10 @@ export class CartService {
     this.cartItems().reduce((sum, item) => sum + item.quantity, 0)
   );
 
-  addToCart(product: Product, quantity: number = 1): void {
+  addToCart(product: Product, quantity: number = 1, availableStock: number = 99): void {
     const current = this.cartItems();
     const existing = current.find(i => i.product.id === product.id);
+
     if (existing) {
       this.cartItems.set(current.map(i =>
         i.product.id === product.id
@@ -30,7 +31,7 @@ export class CartService {
           : i
       ));
     } else {
-      this.cartItems.set([...current, { product, quantity }]);
+      this.cartItems.set([...current, { product, quantity, availableStock }]);
     }
   }
 
@@ -43,6 +44,12 @@ export class CartService {
       this.removeFromCart(productId);
       return;
     }
+    const item = this.cartItems().find(i => i.product.id === productId);
+    if (!item) return;
+
+    // Solo bloquea subir por encima del stock, bajar siempre permitido
+    if (quantity > item.availableStock && quantity > item.quantity) return;
+
     this.cartItems.set(this.cartItems().map(i =>
       i.product.id === productId ? { ...i, quantity } : i
     ));

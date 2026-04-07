@@ -4,7 +4,6 @@ import { CurrencyPipe } from '@angular/common';
 import { CartService } from '../../core/services/cart';
 import { OrderService } from '../../core/services/order';
 import { PaymentService } from '../../core/services/payment';
-import { CartItem } from '../../core/models/cart.model';
 
 @Component({
   selector: 'app-cart',
@@ -31,7 +30,16 @@ export class CartComponent {
   }
 
   checkout(): void {
-    const items = this.cartService.items().map(item => ({
+    const items = this.cartService.items();
+
+    for (const item of items) {
+      if (item.quantity > item.availableStock) {
+        alert(`Not enough stock for "${item.product.name}". Only ${item.availableStock} available.`);
+        return;
+      }
+    }
+
+    const orderItems = items.map(item => ({
       productId: item.product.id,
       quantity: item.quantity,
       unitPrice: item.product.price
@@ -39,7 +47,7 @@ export class CartComponent {
 
     const orderRequest = {
       customerId: 1,
-      items
+      items: orderItems
     };
 
     this.orderService.createOrder(orderRequest).subscribe({

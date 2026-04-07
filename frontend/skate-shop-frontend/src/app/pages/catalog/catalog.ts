@@ -71,7 +71,8 @@ export class CatalogComponent implements OnInit {
   }
 
   onAddToCart(product: Product): void {
-    this.cartService.addToCart(product);
+    const stock = this.getStock(product.id);
+    this.cartService.addToCart(product, 1, stock);
   }
 
   clearFilters(): void {

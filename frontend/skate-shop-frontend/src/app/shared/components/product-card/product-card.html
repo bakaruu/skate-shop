@@ -1,8 +1,12 @@
 <div class="product-card">
   <div class="product-card__image">
     <img [src]="product.imageUrl" [alt]="product.name" />
-    <button class="product-card__quick-add" (click)="onAddToCart()">
-      Add to cart
+    <button
+      class="product-card__quick-add"
+      (click)="onAddToCart()"
+      [disabled]="stock === 0"
+      [class.disabled]="stock === 0">
+      {{ stock > 0 ? 'Add to cart' : 'Out of stock' }}
     </button>
   </div>
   <div class="product-card__info">
