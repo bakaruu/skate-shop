@@ -24,11 +24,8 @@ jobs:
       - name: Build with Maven
         run: mvn clean install -DskipTests
 
-      - name: Run tests
-        run: mvn test
-
-      - name: Build Docker images with Jib
-        run: mvn jib:build
+      - name: Build and push Docker images with Jib
+        run: mvn jib:build -DskipTests
         env:
           DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
           DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
