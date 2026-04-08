@@ -61,6 +61,12 @@ public class InventoryService {
         inventory.setQuantity(inventory.getQuantity() - quantity);
         inventoryRepository.save(inventory);
         log.info("Stock decreased for product {} by {}", productId, quantity);
+
+        if (inventory.getQuantity() <= 0) {
+            inventory.setQuantity(10);
+            inventoryRepository.save(inventory);
+            log.info("Stock auto-replenished for product {} to 10", productId);
+        }
     }
 
     @Transactional
