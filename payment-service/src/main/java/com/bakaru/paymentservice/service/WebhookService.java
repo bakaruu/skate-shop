@@ -46,24 +46,40 @@ public class WebhookService {
 
         switch (event.getType()) {
             case "checkout.session.completed" -> {
-                Session session = (Session) event.getDataObjectDeserializer()
-                        .getObject()
-                        .orElseThrow(() -> new RuntimeException("Failed to deserialize session"));
-                paymentService.handleWebhook(session.getId(), true);
+                try {
+                    com.stripe.model.StripeObject stripeObject = event.getDataObjectDeserializer()
+                            .getObject()
+                            .orElse(null);
 
-                Payment payment = paymentRepository.findByStripeSessionId(session.getId())
-                        .orElseThrow(() -> new EntityNotFoundException("Payment not found"));
+                    String sessionId = null;
+                    if (stripeObject instanceof Session session) {
+                        sessionId = session.getId();
+                    } else {
+                        // fallback — parse from raw JSON
+                        String raw = event.getDataObjectDeserializer().getRawJson();
+                        sessionId = objectMapper.readTree(raw).get("id").asText();
+                    }
 
-                List<PaymentCompletedEvent.OrderItem> items = parseItems(payment.getItemsJson());
+                    log.info("Processing checkout.session.completed for session: {}", sessionId);
+                    paymentService.handleWebhook(sessionId, true);
 
-                paymentEventProducer.sendPaymentCompleted(new PaymentCompletedEvent(
-                        payment.getOrderId(),
-                        payment.getCustomerId(),
-                        session.getId(),
-                        "COMPLETED",
-                        items
-                ));
-                log.info("Payment completed for order: {}", payment.getOrderId());
+                    Payment payment = paymentRepository.findByStripeSessionId(sessionId)
+                            .orElseThrow(() -> new EntityNotFoundException("Payment not found"));
+
+                    List<PaymentCompletedEvent.OrderItem> items = parseItems(payment.getItemsJson());
+
+                    paymentEventProducer.sendPaymentCompleted(new PaymentCompletedEvent(
+                            payment.getOrderId(),
+                            payment.getCustomerId(),
+                            sessionId,
+                            "COMPLETED",
+                            items
+                    ));
+                    log.info("Payment completed for order: {}", payment.getOrderId());
+                } catch (Exception e) {
+                    log.error("Error processing checkout.session.completed: {}", e.getMessage(), e);
+                    throw new RuntimeException(e);
+                }
             }
             case "checkout.session.expired" -> {
                 Session session = (Session) event.getDataObjectDeserializer()
