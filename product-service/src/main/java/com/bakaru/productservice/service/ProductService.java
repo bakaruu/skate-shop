@@ -26,7 +26,7 @@ public class ProductService {
     private final ProductRepository productRepository;
     private final ProductMapper productMapper;
 
-    @Cacheable(value = "products", key = "'all:' + #brand + ':' + #category + ':' + #minPrice + ':' + #maxPrice + ':' + #name")
+//    @Cacheable(value = "products", key = "'all:' + #brand + ':' + #category + ':' + #minPrice + ':' + #maxPrice + ':' + #name")
     public List<ProductResponse> getAllProducts(String brand, Category category,
                                                 BigDecimal minPrice, BigDecimal maxPrice,
                                                 String name) {
@@ -62,14 +62,14 @@ public class ProductService {
                 .toList();
     }
 
-    @Cacheable(value = "products", key = "#id")
+//    @Cacheable(value = "products", key = "#id")
     public ProductResponse getProductById(Long id) {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Product not found with id: " + id));
         return productMapper.toResponse(product);
     }
 
-    @CacheEvict(value = "products", allEntries = true)
+//    @CacheEvict(value = "products", allEntries = true)
     @Transactional
     public ProductResponse createProduct(ProductRequest request) {
         log.info("Creating product: {}", request.getName());
@@ -78,7 +78,7 @@ public class ProductService {
         return productMapper.toResponse(saved);
     }
 
-    @CacheEvict(value = "products", allEntries = true)
+//    @CacheEvict(value = "products", allEntries = true)
     @Transactional
     public ProductResponse updateProduct(Long id, ProductRequest request) {
         Product product = productRepository.findById(id)
@@ -95,7 +95,7 @@ public class ProductService {
         return productMapper.toResponse(productRepository.save(product));
     }
 
-    @CacheEvict(value = "products", allEntries = true)
+//    @CacheEvict(value = "products", allEntries = true)
     @Transactional
     public void deleteProduct(Long id) {
         Product product = productRepository.findById(id)

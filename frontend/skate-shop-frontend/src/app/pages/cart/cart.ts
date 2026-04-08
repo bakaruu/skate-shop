@@ -55,7 +55,11 @@ export class CartComponent {
         this.paymentService.createCheckout({
           orderId: order.id,
           customerId: 1,
-          amount: order.totalAmount
+          amount: order.totalAmount,
+          items: items.map(item => ({
+            productId: item.product.id,
+            quantity: item.quantity
+          }))
         }).subscribe({
           next: (response) => {
             window.location.href = response.checkoutUrl;

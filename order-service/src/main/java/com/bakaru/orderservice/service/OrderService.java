@@ -84,4 +84,14 @@ public class OrderService {
                 .customerId(order.getCustomerId())
                 .build());
     }
+
+
+    @Transactional
+    public void updateOrderStatus(Long orderId, OrderStatus status) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new EntityNotFoundException("Order not found: " + orderId));
+        order.setStatus(status);
+        orderRepository.save(order);
+        log.info("Order {} status updated to {}", orderId, status);
+    }
 }

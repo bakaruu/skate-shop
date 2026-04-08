@@ -1,4 +1,4 @@
-import { Injectable, signal, computed } from '@angular/core';
+import { Injectable, signal, computed, effect } from '@angular/core';
 import { CartItem } from '../models/cart.model';
 import { Product } from '../models/product.model';
 
@@ -7,7 +7,7 @@ import { Product } from '../models/product.model';
 })
 export class CartService {
 
-  private cartItems = signal<CartItem[]>([]);
+  private cartItems = signal<CartItem[]>(this.loadFromStorage());
 
   items = this.cartItems.asReadonly();
 
@@ -19,6 +19,21 @@ export class CartService {
   itemCount = computed(() =>
     this.cartItems().reduce((sum, item) => sum + item.quantity, 0)
   );
+
+  constructor() {
+    effect(() => {
+      localStorage.setItem('cart', JSON.stringify(this.cartItems()));
+    });
+  }
+
+  private loadFromStorage(): CartItem[] {
+    try {
+      const stored = localStorage.getItem('cart');
+      return stored ? JSON.parse(stored) : [];
+    } catch {
+      return [];
+    }
+  }
 
   addToCart(product: Product, quantity: number = 1, availableStock: number = 99): void {
     const current = this.cartItems();
@@ -46,10 +61,7 @@ export class CartService {
     }
     const item = this.cartItems().find(i => i.product.id === productId);
     if (!item) return;
-
-    // Solo bloquea subir por encima del stock, bajar siempre permitido
     if (quantity > item.availableStock && quantity > item.quantity) return;
-
     this.cartItems.set(this.cartItems().map(i =>
       i.product.id === productId ? { ...i, quantity } : i
     ));
@@ -57,5 +69,6 @@ export class CartService {
 
   clearCart(): void {
     this.cartItems.set([]);
+    localStorage.removeItem('cart');
   }
 }

@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Entity
 @Table(name = "payments")
@@ -33,6 +34,9 @@ public class Payment {
 
     private String stripeSessionId;
     private String stripePaymentIntentId;
+
+    @Column(columnDefinition = "TEXT")
+    private String itemsJson;
 
     @Column(nullable = false)
     private LocalDateTime createdAt;

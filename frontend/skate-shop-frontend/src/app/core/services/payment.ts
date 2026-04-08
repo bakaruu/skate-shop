@@ -2,10 +2,16 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
+export interface OrderItem {
+  productId: number;
+  quantity: number;
+}
+
 export interface PaymentRequest {
   orderId: number;
   customerId: number;
   amount: number;
+  items: OrderItem[];
 }
 
 export interface CheckoutResponse {
