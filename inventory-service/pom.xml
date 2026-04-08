@@ -97,7 +97,7 @@
 				<artifactId>jib-maven-plugin</artifactId>
 				<configuration>
 					<to>
-						<image>bakaru/inventory-service:latest</image>
+						<image>devaru/inventory-service:latest</image>
 					</to>
 					<container>
 						<ports>

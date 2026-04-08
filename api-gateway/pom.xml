@@ -42,7 +42,7 @@
 				<artifactId>jib-maven-plugin</artifactId>
 				<configuration>
 					<to>
-						<image>bakaru/api-gateway:latest</image>
+						<image>devaru/api-gateway:latest</image>
 					</to>
 					<container>
 						<ports>

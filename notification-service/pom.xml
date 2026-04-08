@@ -75,7 +75,7 @@
 				<artifactId>jib-maven-plugin</artifactId>
 				<configuration>
 					<to>
-						<image>bakaru/notification-service:latest</image>
+						<image>devaru/notification-service:latest</image>
 					</to>
 					<container>
 						<ports>

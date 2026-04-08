@@ -108,7 +108,7 @@
 				<artifactId>jib-maven-plugin</artifactId>
 				<configuration>
 					<to>
-						<image>bakaru/payment-service:latest</image>
+						<image>devaru/payment-service:latest</image>
 					</to>
 					<container>
 						<ports>

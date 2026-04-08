@@ -118,7 +118,7 @@ services:
   # ─── Services ─────────────────────────────────────────────────
 
   discovery-service:
-    image: bakaru/discovery-service:latest
+    image: devaru/discovery-service:latest
     container_name: discovery-service
     ports:
       - "8761:8761"
@@ -129,7 +129,7 @@ services:
       retries: 5
 
   product-service:
-    image: bakaru/product-service:latest
+    image: devaru/product-service:latest
     container_name: product-service
     ports:
       - "8081:8081"
@@ -149,7 +149,7 @@ services:
         condition: service_healthy
 
   inventory-service:
-    image: bakaru/inventory-service:latest
+    image: devaru/inventory-service:latest
     container_name: inventory-service
     ports:
       - "8082:8082"
@@ -168,7 +168,7 @@ services:
         condition: service_healthy
 
   order-service:
-    image: bakaru/order-service:latest
+    image: devaru/order-service:latest
     container_name: order-service
     ports:
       - "8083:8083"
@@ -187,7 +187,7 @@ services:
         condition: service_healthy
 
   notification-service:
-    image: bakaru/notification-service:latest
+    image: devaru/notification-service:latest
     container_name: notification-service
     ports:
       - "8084:8084"
@@ -201,7 +201,7 @@ services:
         condition: service_healthy
 
   payment-service:
-    image: bakaru/payment-service:latest
+    image: devaru/payment-service:latest
     container_name: payment-service
     ports:
       - "8085:8085"
@@ -222,7 +222,7 @@ services:
         condition: service_healthy
 
   api-gateway:
-    image: bakaru/api-gateway:latest
+    image: devaru/api-gateway:latest
     container_name: api-gateway
     ports:
       - "8080:8080"

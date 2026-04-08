@@ -38,7 +38,7 @@
 				<artifactId>jib-maven-plugin</artifactId>
 				<configuration>
 					<to>
-						<image>bakaru/discovery-service:latest</image>
+						<image>devaru/discovery-service:latest</image>
 					</to>
 					<container>
 						<ports>

@@ -99,7 +99,7 @@
 				<artifactId>jib-maven-plugin</artifactId>
 				<configuration>
 					<to>
-						<image>bakaru/order-service:latest</image>
+						<image>devaru/order-service:latest</image>
 					</to>
 					<container>
 						<ports>
