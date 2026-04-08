@@ -8,8 +8,7 @@ A full-stack e-commerce platform built with Spring Boot microservices, Apache Ka
 
 ## 🔗 Related Repository
 
-This project consumes a microservices backend built from scratch:
-👉 [skate-shop-api](https://github.com/bakaruu/skate-shop)
+This project consumes a microservices backend built from scratch.
 
 Make sure all backend services are running before starting the frontend.
 
