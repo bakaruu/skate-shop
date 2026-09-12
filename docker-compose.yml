@@ -178,6 +178,7 @@ services:
       DB_PASSWORD: postgres
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       EUREKA_URL: http://discovery-service:8761/eureka/
+      RESERVATION_TTL_MINUTES: ${RESERVATION_TTL_MINUTES:-30}
     depends_on:
       postgres-order:
         condition: service_healthy
@@ -213,6 +214,8 @@ services:
       EUREKA_URL: http://discovery-service:8761/eureka/
       STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
       STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET}
+      FRONTEND_BASE_URL: ${FRONTEND_BASE_URL:-http://localhost:4200}
+      RESERVATION_TTL_MINUTES: ${RESERVATION_TTL_MINUTES:-30}
     depends_on:
       postgres-payment:
         condition: service_healthy
@@ -228,6 +231,7 @@ services:
       - "8080:8080"
     environment:
       EUREKA_URL: http://discovery-service:8761/eureka/
+      FRONTEND_ORIGIN: ${FRONTEND_ORIGIN:-http://localhost:4200}
     depends_on:
       discovery-service:
         condition: service_healthy
