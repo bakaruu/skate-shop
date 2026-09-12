@@ -53,6 +53,28 @@ class OrderEventConsumerTest {
     }
 
     @Test
+    void handlePaymentCompleted_sendsPaymentConfirmation() throws Exception {
+        String payload = """
+                {"orderId": 1, "customerId": 100, "sessionId": "sess_1", "status": "COMPLETED", "items": []}
+                """;
+
+        orderEventConsumer.handlePaymentCompleted(payload);
+
+        verify(notificationService).sendPaymentConfirmation(1L, 100L);
+    }
+
+    @Test
+    void handlePaymentFailed_sendsPaymentFailedNotification() throws Exception {
+        String payload = """
+                {"orderId": 1, "customerId": 100, "sessionId": "sess_1", "status": "FAILED", "items": []}
+                """;
+
+        orderEventConsumer.handlePaymentFailed(payload);
+
+        verify(notificationService).sendPaymentFailed(1L, 100L);
+    }
+
+    @Test
     void handleOrderPlaced_withMultipleItems_stillSendsOneConfirmation() throws Exception {
         String payload = """
                 {

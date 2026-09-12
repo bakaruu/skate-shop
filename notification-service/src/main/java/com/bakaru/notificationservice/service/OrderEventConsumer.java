@@ -1,7 +1,8 @@
 package com.bakaru.notificationservice.service;
 
-import com.bakaru.notificationservice.event.OrderCancelledEvent;
-import com.bakaru.notificationservice.event.OrderPlacedEvent;
+import com.bakaru.common.event.OrderCancelledEvent;
+import com.bakaru.common.event.OrderPlacedEvent;
+import com.bakaru.common.event.PaymentCompletedEvent;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,5 +29,19 @@ public class OrderEventConsumer {
         OrderCancelledEvent event = objectMapper.readValue(payload, OrderCancelledEvent.class);
         log.info("Received order-cancelled event for orderId: {}", event.getOrderId());
         notificationService.sendOrderCancellation(event.getOrderId(), event.getCustomerId());
+    }
+
+    @KafkaListener(topics = "payment-completed", groupId = "notification-service")
+    public void handlePaymentCompleted(String payload) throws Exception {
+        PaymentCompletedEvent event = objectMapper.readValue(payload, PaymentCompletedEvent.class);
+        log.info("Received payment-completed event for orderId: {}", event.getOrderId());
+        notificationService.sendPaymentConfirmation(event.getOrderId(), event.getCustomerId());
+    }
+
+    @KafkaListener(topics = "payment-failed", groupId = "notification-service")
+    public void handlePaymentFailed(String payload) throws Exception {
+        PaymentCompletedEvent event = objectMapper.readValue(payload, PaymentCompletedEvent.class);
+        log.info("Received payment-failed event for orderId: {}", event.getOrderId());
+        notificationService.sendPaymentFailed(event.getOrderId(), event.getCustomerId());
     }
 }

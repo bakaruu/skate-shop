@@ -10,8 +10,7 @@ public class NotificationService {
     public void sendOrderConfirmation(Long orderId, Long customerId) {
         log.info("📧 Sending order confirmation - orderId: {}, customerId: {}",
                 orderId, customerId);
-        // TODO: conectar con Kafka para recibir eventos
-        // TODO: integrar con servicio de email real (SendGrid, SES, etc.)
+        // TODO: integrate with a real email provider (SendGrid, SES, etc.)
     }
 
     public void sendOrderCancellation(Long orderId, Long customerId) {
