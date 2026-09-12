@@ -1,6 +1,7 @@
-package com.bakaru.orderservice.event;
+package com.bakaru.common.event;
 
 import lombok.*;
+
 import java.math.BigDecimal;
 import java.util.List;
 

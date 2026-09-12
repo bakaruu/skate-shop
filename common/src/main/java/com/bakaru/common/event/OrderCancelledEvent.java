@@ -1,8 +1,7 @@
-package com.bakaru.notificationservice.event;
-
+package com.bakaru.common.event;
 
 import lombok.*;
-import java.math.BigDecimal;
+
 import java.util.List;
 
 @Getter
@@ -10,12 +9,15 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class OrderPlacedEvent {
+public class OrderCancelledEvent {
 
     private Long orderId;
     private Long customerId;
-    private BigDecimal totalAmount;
     private List<OrderItemEvent> items;
+    /** Whether the order had already been paid (and its stock physically decremented) at the
+     *  time it was cancelled - tells inventory-service whether to restock quantity or just
+     *  release a pending reservation. */
+    private boolean paid;
 
     @Getter
     @Setter
@@ -25,6 +27,5 @@ public class OrderPlacedEvent {
     public static class OrderItemEvent {
         private Long productId;
         private Integer quantity;
-        private BigDecimal unitPrice;
     }
 }

@@ -1,4 +1,4 @@
-package com.bakaru.inventoryservice.event;
+package com.bakaru.common.event;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
