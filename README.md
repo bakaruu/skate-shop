@@ -6,12 +6,6 @@ A full-stack e-commerce platform built with Spring Boot microservices, Apache Ka
 
 ---
 
-## 🔗 Related Repository
-
-This project consumes a microservices backend built from scratch.
-
-Make sure all backend services are running before starting the frontend.
-
 ## 🔐 Authentication
 
 Authentication and JWT security are intentionally out of scope for this project — they are fully demonstrated in [Project 1 — User Management API](https://github.com/bakaruu/user-management-api).
@@ -25,9 +19,11 @@ This project focuses on microservices architecture, event-driven communication a
 |---|---|
 | ☕ Java 21 + Spring Boot 3.5 | Backend services |
 | 🌐 Spring Cloud Gateway + Eureka | API Gateway + Service Discovery |
+| 🔌 OpenFeign + Resilience4j | Inter-service calls with circuit breakers |
 | 📨 Apache Kafka | Event-driven messaging |
 | ⚡ Redis | Product catalog caching |
-| 🐘 PostgreSQL | Per-service databases (x4) |
+| 🐘 PostgreSQL + Flyway | Per-service databases (x4) with versioned migrations |
+| 🧪 Testcontainers | Real-infra integration tests (Postgres/Kafka/Redis) |
 | 💳 Stripe | Payment processing |
 | 🅰️ Angular 21 | Frontend SPA |
 | 🐳 Docker Compose | Infrastructure |
@@ -53,25 +49,46 @@ This project focuses on microservices architecture, event-driven communication a
 | Feature | |
 |---|---|
 | 🛍️ Product catalog with filters | Category, brand, price range |
-| 🛒 Shopping cart | Client-side state with Angular Signals |
+| 🛒 Shopping cart → checkout | Client-side cart state, dedicated checkout/review step |
 | 📦 Order management | Full order lifecycle with status tracking |
-| 💳 Stripe payments | Real checkout session, test mode |
-| 📨 Event-driven stock | Kafka decouples order → inventory flow |
+| 💰 Server-side pricing | Order totals are computed from `product-service`, never trusted from the client |
+| 📊 Real stock reservation | Stock is reserved synchronously at order time (not just at payment) and released on cancellation/failed payment |
+| 💳 Stripe payments | Real checkout session, test mode, webhook idempotency |
+| 📨 Event-driven stock | Kafka decouples order → inventory → notification flow |
 | ⚡ Redis caching | Product cache with TTL + invalidation |
 | 🔍 Service discovery | Dynamic registration via Eureka |
+| 🛡️ Resilience | Circuit breakers + fallbacks at the gateway for each downstream service |
+| ⏱️ Abandoned checkout recovery | A scheduled sweep cancels orders left `PENDING` past a TTL and releases their stock reservation; the matching Stripe Checkout Session expiry is kept in sync so a stale session can never be paid after the fact |
 
 ---
 
-## 📡 Event Flow
+## 📡 Event & Request Flow
 ```
-Order Created
+Checkout
     │
-    ├──▶ Kafka: order-placed
-    │         ├──▶ Inventory Service → decrements stock
-    │         └──▶ Notification Service → sends confirmation
+    ├──▶ order-service ──(Feign)──▶ product-service   (authoritative price lookup)
+    │                 └─(Feign)──▶ inventory-service  (synchronous stock reservation)
     │
-    └──▶ Stripe Webhook: payment-completed
-              └──▶ Payment Service → updates order to PAID
+    ├──▶ Kafka: order-placed ──▶ Notification Service (order confirmation)
+    │
+    ├──▶ Stripe Checkout Session
+    │         │
+    │         ├──▶ Webhook: checkout.session.completed
+    │         │        └──▶ payment-service → Kafka: payment-completed
+    │         │                 ├──▶ order-service → status PAID
+    │         │                 ├──▶ inventory-service → decrements stock
+    │         │                 └──▶ notification-service → payment confirmation
+    │         │
+    │         └──▶ Webhook: checkout.session.expired
+    │                  └──▶ payment-service → Kafka: payment-failed
+    │                           ├──▶ order-service → status CANCELLED
+    │                           ├──▶ inventory-service → releases reserved stock
+    │                           └──▶ notification-service → payment failed notice
+    │
+    └──▶ [no webhook ever arrives — abandoned checkout]
+              └──▶ order-service: OrderExpiryScheduler (polls every N ms)
+                       └──▶ order past reservation-ttl-minutes → status CANCELLED
+                                └──▶ inventory-service → releases reserved stock
 ```
 
 ---
@@ -96,12 +113,21 @@ Starts PostgreSQL ×4, Kafka, Zookeeper and Redis.
 7. ApiGatewayApplication         → :8080
 ```
 
+Each service applies its own Flyway migrations (schema + seed data for products/inventory) automatically on startup — no manual `data.sql` step needed.
+
 ### 3. Environment variables
 
 Set these in your IDE run configurations for the Payment Service:
 ```
 STRIPE_SECRET_KEY=sk_test_...
 STRIPE_WEBHOOK_SECRET=whsec_...
+```
+
+Optional, on both Order Service and Payment Service — how long a `PENDING` order can go unpaid
+before it's auto-cancelled and its stock released (defaults to 30 minutes if unset; must be kept
+equal on both services, since it also sets the matching Stripe Checkout Session expiry):
+```
+RESERVATION_TTL_MINUTES=30
 ```
 
 ### 4. Start frontend
@@ -111,7 +137,7 @@ npm install
 ng serve
 ```
 
-Open at `http://localhost:4200`
+Open at `http://localhost:4200`. All API calls go through the Gateway at `http://localhost:8080` (configured in `src/environments/environment.ts`) — the frontend never talks to individual services directly.
 
 ---
 
@@ -138,6 +164,21 @@ Use Stripe test card to complete a purchase:
 | Card number | `4242 4242 4242 4242` |
 | Expiry | Any future date |
 | CVC | Any 3 digits |
+
+---
+
+## ✅ Testing
+
+Each backend service has unit tests (JUnit 5 + Mockito) and a handful of Testcontainers-backed
+integration tests that exercise real Postgres/Kafka/Redis instead of mocks. Run the full suite
+(unit + integration) for every service — requires Docker running locally:
+
+```bash
+mvn clean verify
+```
+
+CI runs the same command on every push/PR; Docker images are only built and pushed on `main`, and
+only after the suite is green.
 
 ---
 
