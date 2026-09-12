@@ -60,4 +60,9 @@ public class ProductController {
     public ResponseEntity<List<String>> getBrands() {
         return ResponseEntity.ok(productService.getAllBrands());
     }
+
+    @GetMapping("/batch")
+    public ResponseEntity<List<ProductResponse>> getByIds(@RequestParam List<Long> ids) {
+        return ResponseEntity.ok(productService.getByIds(ids));
+    }
 }

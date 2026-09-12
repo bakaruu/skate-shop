@@ -174,6 +174,17 @@ class ProductServiceTest {
     }
 
     @Test
+    void getByIds_returnsMatchingProducts() {
+        when(productRepository.findByIdIn(List.of(1L, 2L))).thenReturn(List.of(product));
+        when(productMapper.toResponse(product)).thenReturn(productResponse);
+
+        List<ProductResponse> result = productService.getByIds(List.of(1L, 2L));
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).getId()).isEqualTo(1L);
+    }
+
+    @Test
     void getAllBrands_returnsDistinctSortedBrands() {
         Product product2 = Product.builder()
                 .id(2L).name("Thunder Trucks").brand("Thunder")

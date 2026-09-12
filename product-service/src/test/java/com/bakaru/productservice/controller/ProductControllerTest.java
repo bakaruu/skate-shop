@@ -174,6 +174,16 @@ class ProductControllerTest {
     }
 
     @Test
+    void getByIds_returns200WithList() throws Exception {
+        when(productService.getByIds(List.of(1L, 2L))).thenReturn(List.of(productResponse));
+
+        mockMvc.perform(get("/api/products/batch").param("ids", "1", "2"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].id").value(1));
+    }
+
+    @Test
     void getBrands_returns200WithList() throws Exception {
         when(productService.getAllBrands()).thenReturn(List.of("Element", "Santa Cruz", "Thunder"));
 
