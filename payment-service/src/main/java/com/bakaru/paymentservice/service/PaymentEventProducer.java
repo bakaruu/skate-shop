@@ -1,6 +1,6 @@
 package com.bakaru.paymentservice.service;
 
-import com.bakaru.paymentservice.event.PaymentCompletedEvent;
+import com.bakaru.common.event.PaymentCompletedEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.core.KafkaTemplate;

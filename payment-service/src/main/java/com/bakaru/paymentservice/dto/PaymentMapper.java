@@ -1,5 +1,6 @@
 package com.bakaru.paymentservice.dto;
 
+import com.bakaru.paymentservice.client.OrderClientResponse;
 import com.bakaru.paymentservice.model.Payment;
 import com.bakaru.paymentservice.model.PaymentStatus;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -14,20 +15,18 @@ public class PaymentMapper {
 
     private final ObjectMapper objectMapper;
 
-    public Payment toEntity(PaymentRequest request) {
-        String itemsJson = null;
-        if (request.getItems() != null) {
-            try {
-                itemsJson = objectMapper.writeValueAsString(request.getItems());
-            } catch (JsonProcessingException e) {
-                itemsJson = "[]";
-            }
+    public Payment toEntity(OrderClientResponse order) {
+        String itemsJson;
+        try {
+            itemsJson = objectMapper.writeValueAsString(order.getItems());
+        } catch (JsonProcessingException e) {
+            itemsJson = "[]";
         }
 
         return Payment.builder()
-                .orderId(request.getOrderId())
-                .customerId(request.getCustomerId())
-                .amount(request.getAmount())
+                .orderId(order.getId())
+                .customerId(order.getCustomerId())
+                .amount(order.getTotalAmount())
                 .status(PaymentStatus.PENDING)
                 .itemsJson(itemsJson)
                 .createdAt(LocalDateTime.now())

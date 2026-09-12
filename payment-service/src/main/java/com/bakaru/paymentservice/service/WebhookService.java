@@ -1,32 +1,22 @@
 package com.bakaru.paymentservice.service;
 
-import com.bakaru.paymentservice.event.PaymentCompletedEvent;
-import com.bakaru.paymentservice.dto.PaymentRequest;
-import com.bakaru.paymentservice.model.Payment;
-import com.bakaru.paymentservice.repository.PaymentRepository;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.stripe.exception.SignatureVerificationException;
 import com.stripe.model.Event;
+import com.stripe.model.StripeObject;
 import com.stripe.model.checkout.Session;
 import com.stripe.net.Webhook;
-import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-
-import java.util.Collections;
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class WebhookService {
 
-    private final PaymentService paymentService;
-    private final PaymentEventProducer paymentEventProducer;
-    private final PaymentRepository paymentRepository;
+    private final PaymentTransitionService paymentTransitionService;
     private final ObjectMapper objectMapper;
 
     @Value("${stripe.webhook-secret}")
@@ -47,75 +37,42 @@ public class WebhookService {
         switch (event.getType()) {
             case "checkout.session.completed" -> {
                 try {
-                    com.stripe.model.StripeObject stripeObject = event.getDataObjectDeserializer()
-                            .getObject()
-                            .orElse(null);
-
-                    String sessionId = null;
-                    if (stripeObject instanceof Session session) {
-                        sessionId = session.getId();
-                    } else {
-                        // fallback — parse from raw JSON
-                        String raw = event.getDataObjectDeserializer().getRawJson();
-                        sessionId = objectMapper.readTree(raw).get("id").asText();
-                    }
-
+                    String sessionId = extractSessionId(event);
                     log.info("Processing checkout.session.completed for session: {}", sessionId);
-                    paymentService.handleWebhook(sessionId, true);
-
-                    Payment payment = paymentRepository.findByStripeSessionId(sessionId)
-                            .orElseThrow(() -> new EntityNotFoundException("Payment not found"));
-
-                    List<PaymentCompletedEvent.OrderItem> items = parseItems(payment.getItemsJson());
-
-                    paymentEventProducer.sendPaymentCompleted(new PaymentCompletedEvent(
-                            payment.getOrderId(),
-                            payment.getCustomerId(),
-                            sessionId,
-                            "COMPLETED",
-                            items
-                    ));
-                    log.info("Payment completed for order: {}", payment.getOrderId());
+                    paymentTransitionService.completePayment(sessionId);
                 } catch (Exception e) {
                     log.error("Error processing checkout.session.completed: {}", e.getMessage(), e);
                     throw new RuntimeException(e);
                 }
             }
             case "checkout.session.expired" -> {
-                Session session = (Session) event.getDataObjectDeserializer()
-                        .getObject()
-                        .orElseThrow(() -> new RuntimeException("Failed to deserialize session"));
-                paymentService.handleWebhook(session.getId(), false);
-
-                Payment payment = paymentRepository.findByStripeSessionId(session.getId())
-                        .orElseThrow(() -> new EntityNotFoundException("Payment not found"));
-
-                List<PaymentCompletedEvent.OrderItem> items = parseItems(payment.getItemsJson());
-
-                paymentEventProducer.sendPaymentFailed(new PaymentCompletedEvent(
-                        payment.getOrderId(),
-                        payment.getCustomerId(),
-                        session.getId(),
-                        "FAILED",
-                        items
-                ));
-                log.info("Payment failed for order: {}", payment.getOrderId());
+                try {
+                    String sessionId = extractSessionId(event);
+                    log.info("Processing checkout.session.expired for session: {}", sessionId);
+                    paymentTransitionService.failPayment(sessionId);
+                } catch (Exception e) {
+                    log.error("Error processing checkout.session.expired: {}", e.getMessage(), e);
+                    throw new RuntimeException(e);
+                }
             }
             default -> log.info("Unhandled event type: {}", event.getType());
         }
     }
 
-    private List<PaymentCompletedEvent.OrderItem> parseItems(String itemsJson) {
-        if (itemsJson == null || itemsJson.isEmpty()) return Collections.emptyList();
-        try {
-            List<PaymentRequest.OrderItem> requestItems = objectMapper.readValue(
-                    itemsJson, new TypeReference<List<PaymentRequest.OrderItem>>() {});
-            return requestItems.stream()
-                    .map(i -> new PaymentCompletedEvent.OrderItem(i.getProductId(), i.getQuantity()))
-                    .toList();
-        } catch (Exception e) {
-            log.error("Error parsing items JSON: {}", e.getMessage());
-            return Collections.emptyList();
+    /**
+     * Stripe's SDK doesn't always deserialize the event payload into a concrete Session
+     * instance (depends on API version/event shape); fall back to parsing the raw JSON for
+     * the session id in that case. Applied to every event type handled here, not just some.
+     */
+    private String extractSessionId(Event event) throws Exception {
+        StripeObject stripeObject = event.getDataObjectDeserializer()
+                .getObject()
+                .orElse(null);
+
+        if (stripeObject instanceof Session session) {
+            return session.getId();
         }
+        String raw = event.getDataObjectDeserializer().getRawJson();
+        return objectMapper.readTree(raw).get("id").asText();
     }
 }

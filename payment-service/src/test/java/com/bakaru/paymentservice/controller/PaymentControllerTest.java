@@ -48,8 +48,6 @@ class PaymentControllerTest {
     void setUp() {
         paymentRequest = PaymentRequest.builder()
                 .orderId(10L)
-                .customerId(100L)
-                .amount(new BigDecimal("79.99"))
                 .build();
 
         checkoutResponse = CheckoutResponse.builder()
@@ -84,31 +82,13 @@ class PaymentControllerTest {
 
     @Test
     void createCheckout_withMissingOrderId_returns400() throws Exception {
-        PaymentRequest invalidRequest = PaymentRequest.builder()
-                .customerId(100L)
-                .amount(new BigDecimal("79.99"))
-                .build();
+        PaymentRequest invalidRequest = PaymentRequest.builder().build();
 
         mockMvc.perform(post("/api/payments/checkout")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(invalidRequest)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.orderId").value("Order ID is required"));
-    }
-
-    @Test
-    void createCheckout_withNegativeAmount_returns400() throws Exception {
-        PaymentRequest invalidRequest = PaymentRequest.builder()
-                .orderId(10L)
-                .customerId(100L)
-                .amount(new BigDecimal("-10.00"))
-                .build();
-
-        mockMvc.perform(post("/api/payments/checkout")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(invalidRequest)))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.amount").value("Amount must be positive"));
     }
 
     @Test

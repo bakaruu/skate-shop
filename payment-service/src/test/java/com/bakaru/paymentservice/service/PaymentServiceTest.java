@@ -1,5 +1,6 @@
 package com.bakaru.paymentservice.service;
 
+import com.bakaru.paymentservice.client.OrderClient;
 import com.bakaru.paymentservice.dto.PaymentMapper;
 import com.bakaru.paymentservice.dto.PaymentResponse;
 import com.bakaru.paymentservice.model.Payment;
@@ -21,7 +22,6 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -33,6 +33,9 @@ class PaymentServiceTest {
     @Mock
     private PaymentMapper paymentMapper;
 
+    @Mock
+    private OrderClient orderClient;
+
     @InjectMocks
     private PaymentService paymentService;
 
@@ -42,6 +45,7 @@ class PaymentServiceTest {
     @BeforeEach
     void setUp() {
         ReflectionTestUtils.setField(paymentService, "stripeSecretKey", "sk_test_dummy");
+        ReflectionTestUtils.setField(paymentService, "frontendBaseUrl", "http://localhost:4200");
 
         payment = Payment.builder()
                 .id(1L)
@@ -60,41 +64,8 @@ class PaymentServiceTest {
                 .amount(new BigDecimal("79.99"))
                 .status(PaymentStatus.COMPLETED)
                 .stripeSessionId("sess_123")
+                .createdAt(LocalDateTime.now())
                 .build();
-    }
-
-    @Test
-    void handleWebhook_whenSuccess_setsStatusCompleted() {
-        when(paymentRepository.findByStripeSessionId("sess_123")).thenReturn(Optional.of(payment));
-        when(paymentRepository.save(any(Payment.class))).thenReturn(payment);
-
-        paymentService.handleWebhook("sess_123", true);
-
-        assertThat(payment.getStatus()).isEqualTo(PaymentStatus.COMPLETED);
-        assertThat(payment.getUpdatedAt()).isNotNull();
-        verify(paymentRepository).save(payment);
-    }
-
-    @Test
-    void handleWebhook_whenFailed_setsStatusFailed() {
-        when(paymentRepository.findByStripeSessionId("sess_123")).thenReturn(Optional.of(payment));
-        when(paymentRepository.save(any(Payment.class))).thenReturn(payment);
-
-        paymentService.handleWebhook("sess_123", false);
-
-        assertThat(payment.getStatus()).isEqualTo(PaymentStatus.FAILED);
-        verify(paymentRepository).save(payment);
-    }
-
-    @Test
-    void handleWebhook_whenSessionNotFound_throwsEntityNotFoundException() {
-        when(paymentRepository.findByStripeSessionId("unknown")).thenReturn(Optional.empty());
-
-        assertThatThrownBy(() -> paymentService.handleWebhook("unknown", true))
-                .isInstanceOf(EntityNotFoundException.class)
-                .hasMessageContaining("unknown");
-
-        verify(paymentRepository, never()).save(any());
     }
 
     @Test
