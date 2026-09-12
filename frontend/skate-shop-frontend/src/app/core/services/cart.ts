@@ -71,4 +71,14 @@ export class CartService {
     this.cartItems.set([]);
     localStorage.removeItem('cart');
   }
+
+  /**
+   * Returns the first cart item whose requested quantity exceeds its last-known available
+   * stock, or null if every item is within stock. This is only a fast-fail UX check against
+   * stale client-side data - the backend's synchronous reservation at order creation is the
+   * real authority and is re-checked regardless of what this returns.
+   */
+  findOverstockedItem(): CartItem | null {
+    return this.cartItems().find(item => item.quantity > item.availableStock) ?? null;
+  }
 }

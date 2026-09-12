@@ -1,3 +1,46 @@
 <div class="checkout">
   <h1>Checkout</h1>
+
+  @if (cartService.items().length === 0) {
+    <div class="checkout__empty">
+      <p>Your cart is empty.</p>
+      <button class="btn-secondary" (click)="backToCart()">Back to cart</button>
+    </div>
+  } @else {
+    <div class="checkout__items">
+      @for (item of cartService.items(); track item.product.id) {
+        <div class="checkout-item">
+          <img [src]="item.product.imageUrl" [alt]="item.product.name" />
+          <div class="checkout-item__info">
+            <h3>{{ item.product.name }}</h3>
+            <p>{{ item.product.brand }} &middot; Qty {{ item.quantity }}</p>
+          </div>
+          <span class="checkout-item__price">
+            {{ item.product.price * item.quantity | currency:'EUR' }}
+          </span>
+        </div>
+      }
+    </div>
+
+    <div class="checkout__summary">
+      <div class="checkout__total">
+        <span>Total</span>
+        <span>{{ cartService.total() | currency:'EUR' }}</span>
+      </div>
+
+      @if (errorMessage()) {
+        <div class="checkout__error">{{ errorMessage() }}</div>
+      }
+
+      <button
+        class="btn-place-order"
+        [disabled]="submitting()"
+        (click)="placeOrder()">
+        {{ submitting() ? 'Placing order…' : 'Place Order' }}
+      </button>
+      <button class="btn-secondary" [disabled]="submitting()" (click)="backToCart()">
+        Back to cart
+      </button>
+    </div>
+  }
 </div>

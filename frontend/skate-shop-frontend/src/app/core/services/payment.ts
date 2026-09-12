@@ -1,17 +1,10 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-
-export interface OrderItem {
-  productId: number;
-  quantity: number;
-}
+import { environment } from '../../../environments/environment';
 
 export interface PaymentRequest {
   orderId: number;
-  customerId: number;
-  amount: number;
-  items: OrderItem[];
 }
 
 export interface CheckoutResponse {
@@ -25,7 +18,7 @@ export interface CheckoutResponse {
 })
 export class PaymentService {
 
-  private apiUrl = 'http://localhost:8085/api/payments';
+  private apiUrl = `${environment.apiBaseUrl}/api/payments`;
 
   constructor(private http: HttpClient) {}
 
