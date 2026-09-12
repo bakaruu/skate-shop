@@ -3,8 +3,11 @@ package com.bakaru.inventoryservice.service;
 import com.bakaru.inventoryservice.dto.InventoryMapper;
 import com.bakaru.inventoryservice.dto.InventoryRequest;
 import com.bakaru.inventoryservice.dto.InventoryResponse;
+import com.bakaru.common.dto.ReservationLine;
 import com.bakaru.inventoryservice.model.Inventory;
+import com.bakaru.inventoryservice.model.ProcessedOrderEvent;
 import com.bakaru.inventoryservice.repository.InventoryRepository;
+import com.bakaru.inventoryservice.repository.ProcessedOrderEventRepository;
 import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -29,6 +32,9 @@ class InventoryServiceTest {
 
     @Mock
     private InventoryMapper inventoryMapper;
+
+    @Mock
+    private ProcessedOrderEventRepository processedOrderEventRepository;
 
     @InjectMocks
     private InventoryService inventoryService;
@@ -156,6 +162,101 @@ class InventoryServiceTest {
 
         assertThat(inventory.getQuantity()).isEqualTo(30);
         verify(inventoryRepository).save(inventory);
+    }
+
+    @Test
+    void reserveBatch_withSufficientStock_incrementsReserved() {
+        when(inventoryRepository.findByProductIdIn(List.of(10L))).thenReturn(List.of(inventory));
+
+        inventoryService.reserveBatch(List.of(new ReservationLine(10L, 5)));
+
+        assertThat(inventory.getReserved()).isEqualTo(5);
+        verify(inventoryRepository).saveAll(List.of(inventory));
+    }
+
+    @Test
+    void reserveBatch_withInsufficientStock_throwsIllegalStateExceptionAndReservesNothing() {
+        inventory.setQuantity(3);
+        when(inventoryRepository.findByProductIdIn(List.of(10L))).thenReturn(List.of(inventory));
+
+        assertThatThrownBy(() -> inventoryService.reserveBatch(List.of(new ReservationLine(10L, 5))))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("Insufficient stock");
+
+        assertThat(inventory.getReserved()).isEqualTo(0);
+        verify(inventoryRepository, never()).saveAll(any());
+    }
+
+    @Test
+    void reserveBatch_whenSecondLineFails_doesNotLeaveFirstLineReserved() {
+        Inventory secondInventory = Inventory.builder()
+                .id(2L).productId(11L).quantity(1).reserved(0).build();
+
+        when(inventoryRepository.findByProductIdIn(List.of(10L, 11L)))
+                .thenReturn(List.of(inventory, secondInventory));
+
+        assertThatThrownBy(() -> inventoryService.reserveBatch(List.of(
+                new ReservationLine(10L, 5),
+                new ReservationLine(11L, 5))))
+                .isInstanceOf(IllegalStateException.class);
+
+        // the first line's reservation is only applied in-memory to a managed entity; since the
+        // method never reaches saveAll (and the surrounding @Transactional would roll back even
+        // if it had), nothing was ever persisted for either line.
+        verify(inventoryRepository, never()).saveAll(any());
+    }
+
+    @Test
+    void releaseBatch_decrementsReserved() {
+        inventory.setReserved(5);
+        when(inventoryRepository.findByProductIdIn(List.of(10L))).thenReturn(List.of(inventory));
+
+        inventoryService.releaseBatch(List.of(new ReservationLine(10L, 5)));
+
+        assertThat(inventory.getReserved()).isEqualTo(0);
+        verify(inventoryRepository).saveAll(List.of(inventory));
+    }
+
+    @Test
+    void releaseBatch_calledTwice_clampsAtZero() {
+        inventory.setReserved(3);
+        when(inventoryRepository.findByProductIdIn(List.of(10L))).thenReturn(List.of(inventory));
+
+        inventoryService.releaseBatch(List.of(new ReservationLine(10L, 3)));
+        inventoryService.releaseBatch(List.of(new ReservationLine(10L, 3)));
+
+        assertThat(inventory.getReserved()).isEqualTo(0);
+    }
+
+    @Test
+    void reserveBatch_whenProductNotFound_throwsEntityNotFoundException() {
+        when(inventoryRepository.findByProductIdIn(List.of(99L))).thenReturn(List.of());
+
+        assertThatThrownBy(() -> inventoryService.reserveBatch(List.of(new ReservationLine(99L, 1))))
+                .isInstanceOf(EntityNotFoundException.class)
+                .hasMessageContaining("99");
+    }
+
+    @Test
+    void tryMarkProcessed_whenNotSeenBefore_recordsItAndReturnsTrue() {
+        when(processedOrderEventRepository.existsByTopicAndOrderId("payment-completed", 1L))
+                .thenReturn(false);
+
+        boolean result = inventoryService.tryMarkProcessed("payment-completed", 1L);
+
+        assertThat(result).isTrue();
+        verify(processedOrderEventRepository).save(any(ProcessedOrderEvent.class));
+    }
+
+    @Test
+    void tryMarkProcessed_whenAlreadySeen_returnsFalseAndDoesNotRecordAgain() {
+        when(processedOrderEventRepository.existsByTopicAndOrderId("payment-completed", 1L))
+                .thenReturn(true);
+
+        boolean result = inventoryService.tryMarkProcessed("payment-completed", 1L);
+
+        assertThat(result).isFalse();
+        verify(processedOrderEventRepository, never()).save(any());
     }
 
     @Test

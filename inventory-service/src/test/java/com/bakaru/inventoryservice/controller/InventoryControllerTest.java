@@ -2,6 +2,7 @@ package com.bakaru.inventoryservice.controller;
 
 import com.bakaru.inventoryservice.dto.InventoryRequest;
 import com.bakaru.inventoryservice.dto.InventoryResponse;
+import com.bakaru.common.dto.ReservationLine;
 import com.bakaru.inventoryservice.service.InventoryService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.EntityNotFoundException;
@@ -17,7 +18,7 @@ import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -112,5 +113,73 @@ class InventoryControllerTest {
                         .param("productIds", "10", "11"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(1));
+    }
+
+    @Test
+    void reserve_withSufficientStock_returns200() throws Exception {
+        List<ReservationLine> lines = List.of(new ReservationLine(10L, 5));
+        doNothing().when(inventoryService).reserveBatch(any());
+
+        mockMvc.perform(post("/api/inventory/reserve")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(lines)))
+                .andExpect(status().isOk());
+
+        verify(inventoryService).reserveBatch(any());
+    }
+
+    @Test
+    void reserve_withInsufficientStock_returns409() throws Exception {
+        List<ReservationLine> lines = List.of(new ReservationLine(10L, 5));
+        doThrow(new IllegalStateException("Insufficient stock for product: 10"))
+                .when(inventoryService).reserveBatch(any());
+
+        mockMvc.perform(post("/api/inventory/reserve")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(lines)))
+                .andExpect(status().isConflict());
+    }
+
+    @Test
+    void reserve_withEmptyList_returns400() throws Exception {
+        mockMvc.perform(post("/api/inventory/reserve")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("[]"))
+                .andExpect(status().isBadRequest());
+
+        verify(inventoryService, never()).reserveBatch(any());
+    }
+
+    @Test
+    void reserve_withNullQuantity_returns400() throws Exception {
+        mockMvc.perform(post("/api/inventory/reserve")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("[{\"productId\": 10, \"quantity\": null}]"))
+                .andExpect(status().isBadRequest());
+
+        verify(inventoryService, never()).reserveBatch(any());
+    }
+
+    @Test
+    void release_withNegativeQuantity_returns400() throws Exception {
+        mockMvc.perform(post("/api/inventory/release")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("[{\"productId\": 10, \"quantity\": -1}]"))
+                .andExpect(status().isBadRequest());
+
+        verify(inventoryService, never()).releaseBatch(any());
+    }
+
+    @Test
+    void release_returns200() throws Exception {
+        List<ReservationLine> lines = List.of(new ReservationLine(10L, 5));
+        doNothing().when(inventoryService).releaseBatch(any());
+
+        mockMvc.perform(post("/api/inventory/release")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(lines)))
+                .andExpect(status().isOk());
+
+        verify(inventoryService).releaseBatch(any());
     }
 }
