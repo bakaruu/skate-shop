@@ -33,4 +33,7 @@ jobs:
 
       - name: Build and push Docker images with Jib
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-        run: mvn -B jib:build -DskipTests
+        # install (not just build/verify) so the `common` module's jar lands in the local
+        # repository - jib:build resolves inter-module dependencies from there, not from the
+        # reactor session of the earlier "mvn verify" step (which is a separate mvn process).
+        run: mvn -B install jib:build -DskipTests
