@@ -8,13 +8,14 @@ import org.springframework.stereotype.Component;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 @Component
 public class OrderMapper {
 
-    public Order toEntity(OrderRequest request) {
+    public Order toEntity(OrderRequest request, Map<Long, BigDecimal> pricesByProductId) {
         List<OrderItem> items = request.getItems().stream()
-                .map(this::toItemEntity)
+                .map(itemRequest -> toItemEntity(itemRequest, pricesByProductId))
                 .toList();
 
         BigDecimal total = items.stream()
@@ -34,11 +35,11 @@ public class OrderMapper {
         return order;
     }
 
-    private OrderItem toItemEntity(OrderItemRequest request) {
+    private OrderItem toItemEntity(OrderItemRequest request, Map<Long, BigDecimal> pricesByProductId) {
         return OrderItem.builder()
                 .productId(request.getProductId())
                 .quantity(request.getQuantity())
-                .unitPrice(request.getUnitPrice())
+                .unitPrice(pricesByProductId.get(request.getProductId()))
                 .build();
     }
 

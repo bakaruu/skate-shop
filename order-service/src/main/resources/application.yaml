@@ -1,6 +1,14 @@
 server:
   port: 8083
 
+app:
+  # how long a PENDING order can sit with no payment before OrderExpiryScheduler cancels it and
+  # releases its stock reservation. Keep in sync with payment-service's same property, which
+  # sets the matching Stripe Checkout Session expiry - otherwise a customer could complete
+  # payment on a session we've already expired order-side.
+  reservation-ttl-minutes: ${RESERVATION_TTL_MINUTES:30}
+  order-expiry-check-interval-ms: ${ORDER_EXPIRY_CHECK_INTERVAL_MS:300000}
+
 spring:
   application:
     name: order-service
@@ -11,7 +19,7 @@ spring:
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: validate
     show-sql: true
     properties:
       hibernate:
@@ -31,6 +39,24 @@ eureka:
       defaultZone: ${EUREKA_URL:http://localhost:8761/eureka/}
   instance:
     prefer-ip-address: true
+
+feign:
+  circuitbreaker:
+    enabled: true
+
+resilience4j:
+  # a config named "default" applies to every instance (product-service, inventory-service -
+  # named after the Feign clients they back) unless that instance declares its own base-config.
+  circuitbreaker:
+    configs:
+      default:
+        sliding-window-size: 10
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 10s
+  timelimiter:
+    configs:
+      default:
+        timeout-duration: 2s
 
 springdoc:
   api-docs:

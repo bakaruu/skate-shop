@@ -1,7 +1,7 @@
 package com.bakaru.orderservice.service;
 
-import com.bakaru.orderservice.event.OrderCancelledEvent;
-import com.bakaru.orderservice.event.OrderPlacedEvent;
+import com.bakaru.common.event.OrderCancelledEvent;
+import com.bakaru.common.event.OrderPlacedEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.core.KafkaTemplate;

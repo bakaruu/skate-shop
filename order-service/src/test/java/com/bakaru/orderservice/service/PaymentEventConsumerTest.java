@@ -36,7 +36,7 @@ class PaymentEventConsumerTest {
     }
 
     @Test
-    void handlePaymentCompleted_whenStatusCompleted_updatesOrderToPaid() {
+    void handlePaymentCompleted_updatesOrderToPaid() {
         String payload = """
                 {"orderId": 1, "customerId": 100, "status": "COMPLETED"}
                 """;
@@ -44,17 +44,6 @@ class PaymentEventConsumerTest {
         paymentEventConsumer.handlePaymentCompleted(payload);
 
         verify(orderService).updateOrderStatus(1L, OrderStatus.PAID);
-    }
-
-    @Test
-    void handlePaymentCompleted_whenStatusFailed_cancelsOrder() {
-        String payload = """
-                {"orderId": 1, "customerId": 100, "status": "FAILED"}
-                """;
-
-        paymentEventConsumer.handlePaymentCompleted(payload);
-
-        verify(orderService).updateOrderStatus(1L, OrderStatus.CANCELLED);
     }
 
     @Test
@@ -67,13 +56,20 @@ class PaymentEventConsumerTest {
     }
 
     @Test
-    void handlePaymentCompleted_withUnknownStatus_doesNotUpdateOrder() {
+    void handlePaymentFailed_cancelsOrder() {
         String payload = """
-                {"orderId": 1, "customerId": 100, "status": "UNKNOWN"}
+                {"orderId": 1, "customerId": 100, "status": "FAILED"}
                 """;
 
-        paymentEventConsumer.handlePaymentCompleted(payload);
+        paymentEventConsumer.handlePaymentFailed(payload);
 
-        verify(orderService, never()).updateOrderStatus(any(), any());
+        verify(orderService).handlePaymentFailed(1L);
+    }
+
+    @Test
+    void handlePaymentFailed_withInvalidJson_doesNotThrow() {
+        paymentEventConsumer.handlePaymentFailed("not-valid-json");
+
+        verify(orderService, never()).handlePaymentFailed(any());
     }
 }

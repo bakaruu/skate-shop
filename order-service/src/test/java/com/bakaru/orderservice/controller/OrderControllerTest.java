@@ -56,7 +56,6 @@ class OrderControllerTest {
                 .items(List.of(OrderItemRequest.builder()
                         .productId(10L)
                         .quantity(2)
-                        .unitPrice(new BigDecimal("79.99"))
                         .build()))
                 .build();
     }
@@ -77,7 +76,7 @@ class OrderControllerTest {
     void createOrder_withMissingCustomerId_returns400() throws Exception {
         OrderRequest invalidRequest = OrderRequest.builder()
                 .items(List.of(OrderItemRequest.builder()
-                        .productId(10L).quantity(1).unitPrice(new BigDecimal("79.99")).build()))
+                        .productId(10L).quantity(1).build()))
                 .build();
 
         mockMvc.perform(post("/api/orders")
@@ -171,5 +170,14 @@ class OrderControllerTest {
 
         mockMvc.perform(delete("/api/orders/99"))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void cancelOrder_whenAlreadyShipped_returns409() throws Exception {
+        doThrow(new IllegalStateException("Order 1 cannot be cancelled from status SHIPPED"))
+                .when(orderService).cancelOrder(1L);
+
+        mockMvc.perform(delete("/api/orders/1"))
+                .andExpect(status().isConflict());
     }
 }

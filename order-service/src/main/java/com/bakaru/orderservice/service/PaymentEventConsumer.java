@@ -1,6 +1,6 @@
 package com.bakaru.orderservice.service;
 
-import com.bakaru.orderservice.event.PaymentCompletedEvent;
+import com.bakaru.common.event.PaymentCompletedEvent;
 import com.bakaru.orderservice.model.OrderStatus;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -21,14 +21,20 @@ public class PaymentEventConsumer {
         try {
             PaymentCompletedEvent event = objectMapper.readValue(payload, PaymentCompletedEvent.class);
             log.info("Payment completed for order: {}, updating status to PAID", event.getOrderId());
-
-            if ("COMPLETED".equals(event.getStatus())) {
-                orderService.updateOrderStatus(event.getOrderId(), OrderStatus.PAID);
-            } else if ("FAILED".equals(event.getStatus())) {
-                orderService.updateOrderStatus(event.getOrderId(), OrderStatus.CANCELLED);
-            }
+            orderService.updateOrderStatus(event.getOrderId(), OrderStatus.PAID);
         } catch (Exception e) {
             log.error("Error processing payment-completed event: {}", e.getMessage());
+        }
+    }
+
+    @KafkaListener(topics = "payment-failed", groupId = "order-service")
+    public void handlePaymentFailed(String payload) {
+        try {
+            PaymentCompletedEvent event = objectMapper.readValue(payload, PaymentCompletedEvent.class);
+            log.info("Payment failed for order: {}, cancelling order", event.getOrderId());
+            orderService.handlePaymentFailed(event.getOrderId());
+        } catch (Exception e) {
+            log.error("Error processing payment-failed event: {}", e.getMessage());
         }
     }
 }
