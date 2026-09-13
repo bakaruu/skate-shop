@@ -22,5 +22,6 @@ export class PaymentSuccessComponent implements OnInit {
   ngOnInit(): void {
     this.sessionId = this.route.snapshot.queryParamMap.get('session_id');
     this.cartService.clearCart();
+    this.cartService.clearPendingOrder();
   }
 }

@@ -73,6 +73,27 @@ export class CartService {
   }
 
   /**
+   * Tracks the order created for the Stripe redirect so it can be cancelled if the customer
+   * comes back without paying (see CartComponent.ngOnInit) - stock is reserved synchronously at
+   * order creation, before payment, so an abandoned checkout would otherwise hold that stock
+   * until the order-service TTL sweep catches it (up to app.reservation-ttl-minutes later).
+   * localStorage rather than a plain signal because a real navigation to Stripe and back reloads
+   * the page - in-memory state wouldn't survive that round trip.
+   */
+  setPendingOrder(orderId: number): void {
+    localStorage.setItem('pendingOrderId', String(orderId));
+  }
+
+  getPendingOrder(): number | null {
+    const stored = localStorage.getItem('pendingOrderId');
+    return stored ? Number(stored) : null;
+  }
+
+  clearPendingOrder(): void {
+    localStorage.removeItem('pendingOrderId');
+  }
+
+  /**
    * Returns the first cart item whose requested quantity exceeds its last-known available
    * stock, or null if every item is within stock. This is only a fast-fail UX check against
    * stale client-side data - the backend's synchronous reservation at order creation is the

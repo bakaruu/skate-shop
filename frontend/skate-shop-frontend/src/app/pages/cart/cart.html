@@ -1,5 +1,5 @@
 <div class="cart">
-  <h1>Your Cart</h1>
+  <h1><span class="symbol">&gt;</span> Your Cart</h1>
 
   @if (cartService.items().length === 0) {
     <div class="cart__empty">
@@ -35,8 +35,13 @@
         <span>Total</span>
         <span>{{ cartService.total() | currency:'EUR' }}</span>
       </div>
-      <button class="btn-checkout" (click)="checkout()">
-        Proceed to Checkout
+
+      @if (errorMessage()) {
+        <div class="cart__error">{{ errorMessage() }}</div>
+      }
+
+      <button class="btn-checkout" [disabled]="submitting()" (click)="placeOrder()">
+        {{ submitting() ? 'Placing order…' : 'Place Order' }}
       </button>
     </div>
   }

@@ -20,4 +20,8 @@ export class OrderService {
   getOrderById(id: number): Observable<OrderResponse> {
     return this.http.get<OrderResponse>(`${this.apiUrl}/${id}`);
   }
+
+  cancelOrder(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/${id}`);
+  }
 }
