@@ -1,53 +1,101 @@
 <div class="catalog">
   <div class="catalog__header">
-    <div class="catalog__title">
+    <div class="catalog__titleRow">
+      <span class="catalog__symbol">&gt;</span>
       <h1>All Products</h1>
       <span class="catalog__count">{{ products().length }} products</span>
     </div>
-    <div class="catalog__filters">
-
-      <select [(ngModel)]="filter.category" (change)="onFilterChange()">
-        <option value="">All Categories</option>
-        @for (cat of categories; track cat) {
-          <option [value]="cat">{{ cat }}</option>
-        }
-      </select>
-
-      <select [(ngModel)]="filter.brand" (change)="onFilterChange()">
-        <option value="">All Brands</option>
-        @for (brand of brands(); track brand) {
-          <option [value]="brand">{{ brand }}</option>
-        }
-      </select>
-      <input
-        type="number"
-        [(ngModel)]="filter.minPrice"
-        (change)="onFilterChange()"
-        placeholder="Min €"
-      />
-      <input
-        type="number"
-        [(ngModel)]="filter.maxPrice"
-        (change)="onFilterChange()"
-        placeholder="Max €"
-      />
-      <button class="btn-clear" (click)="clearFilters()">Clear</button>
-    </div>
+    <button class="btn-toggle-filters" (click)="toggleFilters()">
+      {{ filtersOpen() ? 'Hide filters' : 'Show filters' }}
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="4" y1="6" x2="20" y2="6"/><circle cx="9" cy="6" r="2" fill="currentColor" stroke="none"/>
+        <line x1="4" y1="12" x2="20" y2="12"/><circle cx="15" cy="12" r="2" fill="currentColor" stroke="none"/>
+        <line x1="4" y1="18" x2="20" y2="18"/><circle cx="11" cy="18" r="2" fill="currentColor" stroke="none"/>
+      </svg>
+    </button>
   </div>
 
-  <div class="catalog__grid">
-    @if (loading()) {
-      <div class="loading">Loading...</div>
-    } @else if (products().length === 0) {
-      <div class="empty">No products found.</div>
-    } @else {
-      @for (product of products(); track product.id) {
-        <app-product-card
-          [product]="product"
-          [stock]="getStock(product.id)"
-          (addToCart)="onAddToCart($event)"
-        />
-      }
+
+  <div class="catalog__body">
+    @if (filtersOpen()) {
+      <aside class="catalog__sidebar">
+        <div class="filter-group">
+          <button class="filter-group__header" (click)="toggleSection('category')">
+            Category
+            <span class="chevron" [class.open]="openSections()['category']">&#8250;</span>
+          </button>
+          @if (openSections()['category']) {
+            <div class="filter-group__body">
+              <button class="filter-option" [class.active]="!filter.category" (click)="selectCategory('')">All</button>
+              @for (cat of categories; track cat) {
+                <button class="filter-option" [class.active]="filter.category === cat" (click)="selectCategory(cat)">{{ cat }}</button>
+              }
+            </div>
+          }
+        </div>
+
+        <div class="filter-group">
+          <button class="filter-group__header" (click)="toggleSection('brand')">
+            Brand
+            <span class="chevron" [class.open]="openSections()['brand']">&#8250;</span>
+          </button>
+          @if (openSections()['brand']) {
+            <div class="filter-group__body">
+              <button class="filter-option" [class.active]="!filter.brand" (click)="selectBrand('')">All</button>
+              @for (brand of brands(); track brand) {
+                <button class="filter-option" [class.active]="filter.brand === brand" (click)="selectBrand(brand)">{{ brand }}</button>
+              }
+            </div>
+          }
+        </div>
+
+        <div class="filter-group">
+          <button class="filter-group__header" (click)="toggleSection('price')">
+            Price
+            <span class="chevron" [class.open]="openSections()['price']">&#8250;</span>
+          </button>
+          @if (openSections()['price']) {
+            <div class="filter-group__body filter-group__body--price">
+              <label class="price-field">
+                <span>Min</span>
+                <input
+                  type="number"
+                  [(ngModel)]="filter.minPrice"
+                  (change)="onFilterChange()"
+                  placeholder="€0"
+                />
+              </label>
+              <label class="price-field">
+                <span>Max</span>
+                <input
+                  type="number"
+                  [(ngModel)]="filter.maxPrice"
+                  (change)="onFilterChange()"
+                  placeholder="€999"
+                />
+              </label>
+            </div>
+          }
+        </div>
+
+        <button class="btn-clear" (click)="clearFilters()">Clear all filters</button>
+      </aside>
     }
+
+    <div class="catalog__grid" [class.catalog__grid--narrow]="filtersOpen()">
+      @if (loading()) {
+        <div class="loading">Loading...</div>
+      } @else if (products().length === 0) {
+        <div class="empty">No products found.</div>
+      } @else {
+        @for (product of products(); track product.id) {
+          <app-product-card
+            [product]="product"
+            [stock]="getStock(product.id)"
+            (addToCart)="onAddToCart($event)"
+          />
+        }
+      }
+    </div>
   </div>
 </div>

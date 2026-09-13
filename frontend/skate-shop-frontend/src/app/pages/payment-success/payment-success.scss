@@ -4,41 +4,52 @@
   align-items: center;
   justify-content: center;
   min-height: calc(100vh - 64px);
-  background: #ffffff;
+  background: var(--bg);
   text-align: center;
   padding: 2rem;
 
   &__icon {
-    width: 100px;
-    height: 100px;
+    width: 96px;
+    height: 96px;
     border-radius: 50%;
-    border: 2px solid #0a0a0a;
+    border: 2px solid var(--accent);
+    color: var(--accent);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 2.5rem;
-    color: #0a0a0a;
-    margin-bottom: 3rem;
-  }
-
-  h1 {
-    font-size: 2rem;
-    font-weight: 700;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: #0a0a0a;
+    font-size: 2.25rem;
     margin-bottom: 1.5rem;
   }
 
+  &__label {
+    font: 500 11px var(--font-mono);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--accent);
+    border: 1px solid rgba(59, 118, 224, 0.3);
+    border-radius: 5px;
+    padding: 4px 10px;
+    margin-bottom: 1.5rem;
+  }
+
+  h1 {
+    font-size: 1.75rem;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+    margin-bottom: 1rem;
+  }
+
   p {
-    font-size: 1rem;
-    color: #555;
+    font-size: 0.95rem;
+    font-weight: 300;
+    color: var(--muted-1);
     margin-bottom: 0.5rem;
   }
 
   &__session {
-    font-size: 0.75rem;
-    color: #bbb;
+    font: 400 12px var(--font-mono);
+    color: var(--muted-3);
     margin-bottom: 3rem;
     max-width: 600px;
     word-break: break-all;
@@ -49,17 +60,15 @@
   display: inline-block;
   margin-top: 2rem;
   padding: 1rem 3rem;
-  background: #0a0a0a;
+  background: var(--accent);
   color: #ffffff;
   text-decoration: none;
-  font-size: 0.85rem;
-  font-weight: 700;
-  letter-spacing: 0.15em;
+  font: 600 12px var(--font-mono);
+  letter-spacing: 0.1em;
   text-transform: uppercase;
-  font-family: 'Inter', sans-serif;
-  transition: opacity 0.2s;
+  transition: background 0.2s;
 
   &:hover {
-    opacity: 0.7;
+    background: var(--accent-hover);
   }
 }

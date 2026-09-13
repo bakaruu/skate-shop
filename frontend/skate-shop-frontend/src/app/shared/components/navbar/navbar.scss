@@ -2,10 +2,11 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 2.5rem;
+  padding: 0 clamp(1.25rem, 5vw, 2.5rem);
   height: 64px;
-  background: #ffffff;
-  border-bottom: 1px solid #f0f0f0;
+  background: rgba(255, 255, 255, 0.86);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--line);
   position: sticky;
   top: 0;
   z-index: 100;
@@ -20,30 +21,29 @@
   }
 
   &__brand a {
-    font-size: 0.85rem;
-    font-weight: 700;
-    color: #0a0a0a;
+    font: 600 13px var(--font-mono);
+    color: var(--ink);
     text-decoration: none;
-    letter-spacing: 0.2em;
-    text-transform: uppercase;
+    letter-spacing: 0.08em;
   }
 
   &__links {
     display: flex;
     align-items: center;
-    gap: 2.5rem;
+    gap: 2rem;
 
     a {
-      color: #0a0a0a;
+      display: inline-flex;
+      align-items: center;
+      color: var(--muted-1);
       text-decoration: none;
-      font-size: 0.8rem;
-      font-weight: 500;
-      letter-spacing: 0.08em;
+      font: 500 12.5px var(--font-mono);
+      letter-spacing: 0.06em;
       text-transform: uppercase;
-      transition: opacity 0.2s;
+      transition: color 0.2s;
 
-      &:hover { opacity: 0.5; }
-      &.active { opacity: 0.5; }
+      &:hover { color: var(--accent); }
+      &.active { color: var(--ink); }
     }
   }
 }
@@ -52,12 +52,11 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: #0a0a0a;
+  background: var(--accent);
   color: #ffffff;
   border-radius: 50%;
   width: 16px;
   height: 16px;
-  font-size: 0.65rem;
-  font-weight: 700;
-  margin-left: 4px;
+  font: 600 10px var(--font-mono);
+  margin-left: 6px;
 }

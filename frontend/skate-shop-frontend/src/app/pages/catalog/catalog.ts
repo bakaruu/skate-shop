@@ -21,6 +21,8 @@ export class CatalogComponent implements OnInit {
   inventory = signal<Map<number, number>>(new Map());
   filter: ProductFilter = { category: '', brand: '' };
   categories = ['DECK', 'TRUCKS', 'WHEELS'];
+  filtersOpen = signal(this.loadFiltersOpenPreference());
+  openSections = signal<Record<string, boolean>>({ category: true, brand: true, price: true });
   private filterTimer: any;
 
   constructor(
@@ -77,6 +79,35 @@ export class CatalogComponent implements OnInit {
 
   clearFilters(): void {
     this.filter = { category: '', brand: '' };
+    this.loadProducts();
+  }
+
+  toggleFilters(): void {
+    this.filtersOpen.update(v => {
+      const next = !v;
+      localStorage.setItem('filtersOpen', String(next));
+      return next;
+    });
+  }
+
+  private loadFiltersOpenPreference(): boolean {
+    const stored = localStorage.getItem('filtersOpen');
+    // Defaults to open (true) the first time, so the sidebar is visible without needing a click -
+    // afterwards it remembers whatever the user last chose instead of resetting on every visit.
+    return stored === null ? true : stored === 'true';
+  }
+
+  toggleSection(name: string): void {
+    this.openSections.update(s => ({ ...s, [name]: !s[name] }));
+  }
+
+  selectCategory(category: string): void {
+    this.filter.category = this.filter.category === category ? '' : category;
+    this.loadProducts();
+  }
+
+  selectBrand(brand: string): void {
+    this.filter.brand = this.filter.brand === brand ? '' : brand;
     this.loadProducts();
   }
 
