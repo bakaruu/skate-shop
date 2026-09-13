@@ -3,6 +3,7 @@ package com.bakaru.common;
 import com.bakaru.common.exception.UpstreamServiceException;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.ConstraintViolationException;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -19,6 +20,7 @@ import java.util.Map;
  * Spring Boot's component scan does not cross into this module's package automatically.
  */
 @RestControllerAdvice
+@Slf4j
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(EntityNotFoundException.class)
@@ -70,6 +72,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, Object>> handleGenericException(Exception ex) {
+        log.error("Unhandled exception", ex);
         return ErrorResponseFactory.build(HttpStatus.INTERNAL_SERVER_ERROR, "An unexpected error occurred");
     }
 }

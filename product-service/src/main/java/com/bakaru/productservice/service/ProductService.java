@@ -17,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -56,10 +57,14 @@ public class ProductService {
         spec = spec.and((root, query, cb) ->
                 cb.isTrue(root.get("active")));
 
+        // Collectors.toList() (a plain, mutable ArrayList), not Stream.toList() - this result is
+        // @Cacheable, and GenericJackson2JsonRedisSerializer can serialize Stream.toList()'s
+        // immutable ImmutableCollections$ListN fine but can't deserialize it back (no accessible
+        // constructor), which only breaks on the second (cache-hit) read, not the first.
         return productRepository.findAll(spec)
                 .stream()
                 .map(productMapper::toResponse)
-                .toList();
+                .collect(Collectors.toList());
     }
 
     @Cacheable(value = "products", key = "#id")

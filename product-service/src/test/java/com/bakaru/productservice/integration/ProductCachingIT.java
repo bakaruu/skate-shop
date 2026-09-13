@@ -7,6 +7,7 @@ import com.bakaru.productservice.repository.ProductRepository;
 import com.bakaru.productservice.service.ProductService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
@@ -111,5 +112,27 @@ class ProductCachingIT {
                 .build());
 
         assertThat(productService.getProductById(productId).getName()).isEqualTo("Updated Via Service");
+    }
+
+    /**
+     * getProductById's single-object cache entry never exercises a real deserialization round
+     * trip failure the way a cached List does: GenericJackson2JsonRedisSerializer can serialize
+     * Stream.toList()'s immutable ImmutableCollections$ListN just fine (it only reads elements),
+     * but fails to deserialize that exact type back out of Redis on the second (real cache-hit)
+     * call - a bug that hid behind the getProductById-only coverage above until it broke the live
+     * catalog page. This test forces getAllProducts through a genuine second-call deserialization.
+     */
+    @Test
+    void getAllProducts_calledTwice_secondCallDeserializesFromRedisWithoutError() {
+        List<ProductResponse> first = productService.getAllProducts(null, null, null, null, null);
+        assertThat(first).hasSize(1);
+        assertThat(first.get(0).getName()).isEqualTo("Cached Deck");
+
+        List<ProductResponse> second = productService.getAllProducts(null, null, null, null, null);
+
+        assertThat(second)
+                .as("the second call must be served from Redis - if deserialization is broken, this throws instead of returning")
+                .hasSize(1);
+        assertThat(second.get(0).getName()).isEqualTo("Cached Deck");
     }
 }
