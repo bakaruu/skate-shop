@@ -192,16 +192,26 @@
       });
     }
 
+    var SPECS = ['product', 'inventory', 'order', 'payment'];
     var tabs = document.getElementById('tabs');
+
+    function select(spec) {
+      Array.prototype.forEach.call(tabs.children, function (t) {
+        t.classList.toggle('active', t.dataset.spec === spec);
+      });
+      render(spec);
+    }
+
     tabs.addEventListener('click', function (e) {
       var btn = e.target.closest('.tab');
       if (!btn) return;
-      Array.prototype.forEach.call(tabs.children, function (t) { t.classList.remove('active'); });
-      btn.classList.add('active');
-      render(btn.dataset.spec);
+      history.replaceState(null, '', '?spec=' + btn.dataset.spec);
+      select(btn.dataset.spec);
     });
 
-    render('product');
+    // Deep link support (?spec=order), so the portfolio can link straight to a service.
+    var requested = new URLSearchParams(location.search).get('spec');
+    select(SPECS.indexOf(requested) !== -1 ? requested : 'product');
   </script>
 </body>
 </html>
