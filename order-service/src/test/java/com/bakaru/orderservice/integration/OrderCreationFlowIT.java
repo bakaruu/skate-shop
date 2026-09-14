@@ -82,7 +82,7 @@ class OrderCreationFlowIT {
                 .items(List.of(OrderItemRequest.builder().productId(10L).quantity(2).build()))
                 .build();
 
-        OrderResponse response = orderService.createOrder(request);
+        OrderResponse response = orderService.createOrder(request, null);
 
         assertThat(response.getId()).isNotNull();
         assertThat(response.getTotalAmount()).isEqualByComparingTo("159.98");

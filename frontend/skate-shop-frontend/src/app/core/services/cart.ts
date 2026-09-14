@@ -94,6 +94,27 @@ export class CartService {
   }
 
   /**
+   * A stable key for the current checkout attempt, sent as the `Idempotency-Key` header on
+   * order creation. Reused across retries of the same attempt (e.g. the create-order request
+   * succeeded but the response was lost, and the customer clicks "Place Order" again while
+   * still looking at the same cart) so order-service returns the existing order instead of
+   * creating - and reserving stock for - a duplicate. Cleared once the attempt is abandoned or
+   * completed, so a genuinely new checkout gets a fresh key.
+   */
+  getOrCreateIdempotencyKey(): string {
+    let key = localStorage.getItem('checkoutIdempotencyKey');
+    if (!key) {
+      key = crypto.randomUUID();
+      localStorage.setItem('checkoutIdempotencyKey', key);
+    }
+    return key;
+  }
+
+  clearIdempotencyKey(): void {
+    localStorage.removeItem('checkoutIdempotencyKey');
+  }
+
+  /**
    * Returns the first cart item whose requested quantity exceeds its last-known available
    * stock, or null if every item is within stock. This is only a fast-fail UX check against
    * stale client-side data - the backend's synchronous reservation at order creation is the

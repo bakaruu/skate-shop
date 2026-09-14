@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { OrderRequest, OrderResponse } from '../models/order.model';
 import { environment } from '../../../environments/environment';
@@ -13,8 +13,11 @@ export class OrderService {
 
   constructor(private http: HttpClient) {}
 
-  createOrder(request: OrderRequest): Observable<OrderResponse> {
-    return this.http.post<OrderResponse>(this.apiUrl, request);
+  createOrder(request: OrderRequest, idempotencyKey?: string): Observable<OrderResponse> {
+    const headers = idempotencyKey
+      ? new HttpHeaders({ 'Idempotency-Key': idempotencyKey })
+      : undefined;
+    return this.http.post<OrderResponse>(this.apiUrl, request, { headers });
   }
 
   getOrderById(id: number): Observable<OrderResponse> {

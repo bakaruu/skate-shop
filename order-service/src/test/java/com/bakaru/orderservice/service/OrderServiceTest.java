@@ -109,7 +109,7 @@ class OrderServiceTest {
         when(orderRepository.save(order)).thenReturn(order);
         when(orderMapper.toResponse(order)).thenReturn(orderResponse);
 
-        OrderResponse result = orderService.createOrder(orderRequest);
+        OrderResponse result = orderService.createOrder(orderRequest, null);
 
         assertThat(result.getCustomerId()).isEqualTo(100L);
         verify(inventoryClient).reserve(List.of(new ReservationLine(10L, 2)));
@@ -128,7 +128,7 @@ class OrderServiceTest {
         when(orderRepository.save(order)).thenReturn(order);
         when(orderMapper.toResponse(order)).thenReturn(orderResponse);
 
-        orderService.createOrder(orderRequest);
+        orderService.createOrder(orderRequest, null);
 
         ArgumentCaptor<Map<Long, BigDecimal>> pricesCaptor = ArgumentCaptor.forClass(Map.class);
         verify(orderMapper).toEntity(eq(orderRequest), pricesCaptor.capture());
@@ -139,7 +139,7 @@ class OrderServiceTest {
     void createOrder_whenProductUnknown_throwsIllegalArgumentException() {
         when(productClient.getByIds(List.of(10L))).thenReturn(List.of());
 
-        assertThatThrownBy(() -> orderService.createOrder(orderRequest))
+        assertThatThrownBy(() -> orderService.createOrder(orderRequest, null))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Unknown product id");
 
@@ -152,7 +152,7 @@ class OrderServiceTest {
         ProductClientResponse inactive = new ProductClientResponse(10L, "Deck", new BigDecimal("79.99"), false);
         when(productClient.getByIds(List.of(10L))).thenReturn(List.of(inactive));
 
-        assertThatThrownBy(() -> orderService.createOrder(orderRequest))
+        assertThatThrownBy(() -> orderService.createOrder(orderRequest, null))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("not available");
 
@@ -164,7 +164,7 @@ class OrderServiceTest {
     void createOrder_whenProductServiceDown_throwsUpstreamServiceException() {
         when(productClient.getByIds(List.of(10L))).thenThrow(feignException(500));
 
-        assertThatThrownBy(() -> orderService.createOrder(orderRequest))
+        assertThatThrownBy(() -> orderService.createOrder(orderRequest, null))
                 .isInstanceOf(UpstreamServiceException.class);
 
         verifyNoInteractions(inventoryClient);
@@ -176,7 +176,7 @@ class OrderServiceTest {
         when(productClient.getByIds(List.of(10L))).thenReturn(List.of(productClientResponse));
         doThrow(feignException(409)).when(inventoryClient).reserve(any());
 
-        assertThatThrownBy(() -> orderService.createOrder(orderRequest))
+        assertThatThrownBy(() -> orderService.createOrder(orderRequest, null))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("Insufficient stock");
 
@@ -190,9 +190,40 @@ class OrderServiceTest {
         when(orderMapper.toEntity(eq(orderRequest), any())).thenReturn(order);
         when(orderRepository.save(order)).thenThrow(new RuntimeException("db down"));
 
-        assertThatThrownBy(() -> orderService.createOrder(orderRequest))
+        assertThatThrownBy(() -> orderService.createOrder(orderRequest, null))
                 .isInstanceOf(RuntimeException.class);
 
+        verify(inventoryClient).reserve(List.of(new ReservationLine(10L, 2)));
+        verify(inventoryClient).release(List.of(new ReservationLine(10L, 2)));
+        verify(orderEventProducer, never()).sendOrderPlaced(any());
+    }
+
+    @Test
+    void createOrder_withAlreadyUsedIdempotencyKey_returnsExistingOrderWithoutReservingStockAgain() {
+        when(orderRepository.findByIdempotencyKey("key-123")).thenReturn(Optional.of(order));
+        when(orderMapper.toResponse(order)).thenReturn(orderResponse);
+
+        OrderResponse result = orderService.createOrder(orderRequest, "key-123");
+
+        assertThat(result.getId()).isEqualTo(1L);
+        verifyNoInteractions(productClient, inventoryClient);
+        verify(orderRepository, never()).save(any());
+        verify(orderEventProducer, never()).sendOrderPlaced(any());
+    }
+
+    @Test
+    void createOrder_whenConcurrentRequestWinsIdempotencyRace_releasesStockAndReturnsWinningOrder() {
+        when(orderRepository.findByIdempotencyKey("key-456"))
+                .thenReturn(Optional.empty())
+                .thenReturn(Optional.of(order));
+        when(productClient.getByIds(List.of(10L))).thenReturn(List.of(productClientResponse));
+        when(orderMapper.toEntity(eq(orderRequest), any())).thenReturn(order);
+        when(orderRepository.save(order)).thenThrow(new org.springframework.dao.DataIntegrityViolationException("duplicate key"));
+        when(orderMapper.toResponse(order)).thenReturn(orderResponse);
+
+        OrderResponse result = orderService.createOrder(orderRequest, "key-456");
+
+        assertThat(result.getId()).isEqualTo(1L);
         verify(inventoryClient).reserve(List.of(new ReservationLine(10L, 2)));
         verify(inventoryClient).release(List.of(new ReservationLine(10L, 2)));
         verify(orderEventProducer, never()).sendOrderPlaced(any());

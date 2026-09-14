@@ -18,6 +18,7 @@ import feign.FeignException;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,6 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
 
 @Service
@@ -39,8 +41,17 @@ public class OrderService {
     private final InventoryClient inventoryClient;
 
     @Transactional
-    public OrderResponse createOrder(OrderRequest request) {
+    public OrderResponse createOrder(OrderRequest request, String idempotencyKey) {
         log.info("Creating order for customer: {}", request.getCustomerId());
+
+        if (idempotencyKey != null && !idempotencyKey.isBlank()) {
+            Optional<Order> existing = orderRepository.findByIdempotencyKey(idempotencyKey);
+            if (existing.isPresent()) {
+                log.info("Idempotency-Key {} already used, returning existing order {} instead of creating a duplicate",
+                        idempotencyKey, existing.get().getId());
+                return orderMapper.toResponse(existing.get());
+            }
+        }
 
         List<Long> productIds = request.getItems().stream()
                 .map(OrderItemRequest::getProductId)
@@ -57,6 +68,7 @@ public class OrderService {
         Order saved;
         try {
             Order order = orderMapper.toEntity(request, pricesByProductId);
+            order.setIdempotencyKey(idempotencyKey);
             saved = orderRepository.save(order);
             log.info("Order created with id: {}", saved.getId());
 
@@ -73,6 +85,21 @@ public class OrderService {
                             .toList())
                     .build();
             orderEventProducer.sendOrderPlaced(event);
+        } catch (DataIntegrityViolationException dup) {
+            // Another request with the same Idempotency-Key won the race and already
+            // created the order (the partial unique index on idempotency_key rejected
+            // this insert) - release the stock we just reserved and hand back the
+            // order that actually exists, instead of failing or double-reserving.
+            log.warn("Concurrent duplicate order creation detected for Idempotency-Key {}, " +
+                    "releasing this request's reservation and returning the existing order", idempotencyKey);
+            try {
+                inventoryClient.release(reservationLines);
+            } catch (RuntimeException releaseEx) {
+                log.error("Failed to release stock reservation after idempotent duplicate detection", releaseEx);
+            }
+            return orderRepository.findByIdempotencyKey(idempotencyKey)
+                    .map(orderMapper::toResponse)
+                    .orElseThrow(() -> dup);
         } catch (RuntimeException e) {
             log.error("Order creation failed after stock was reserved, releasing reservation", e);
             try {

@@ -31,10 +31,17 @@ export class CartComponent implements OnInit {
     const pendingOrderId = this.cartService.getPendingOrder();
     if (pendingOrderId) {
       this.orderService.cancelOrder(pendingOrderId).subscribe({
-        complete: () => this.cartService.clearPendingOrder(),
-        error: () => this.cartService.clearPendingOrder()
+        complete: () => this.abandonPendingCheckout(),
+        error: () => this.abandonPendingCheckout()
       });
     }
+  }
+
+  private abandonPendingCheckout(): void {
+    this.cartService.clearPendingOrder();
+    // A fresh checkout attempt (possibly with a changed cart) deserves a fresh idempotency
+    // key, not one tied to the abandoned order above.
+    this.cartService.clearIdempotencyKey();
   }
 
   updateQuantity(productId: number, quantity: number): void {
@@ -71,7 +78,9 @@ export class CartComponent implements OnInit {
       }))
     };
 
-    this.orderService.createOrder(orderRequest).pipe(
+    const idempotencyKey = this.cartService.getOrCreateIdempotencyKey();
+
+    this.orderService.createOrder(orderRequest, idempotencyKey).pipe(
       tap(order => this.cartService.setPendingOrder(order.id)),
       switchMap(order => this.paymentService.createCheckout({ orderId: order.id }))
     ).subscribe({
