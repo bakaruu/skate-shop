@@ -33,6 +33,26 @@
 			<artifactId>lombok</artifactId>
 			<optional>true</optional>
 		</dependency>
+		<!-- Both optional: needed to compile the tracing helpers in this module (Feign request
+		     interceptor, Kafka record interceptor), but not every service that depends on
+		     common uses Feign or Kafka, so this must not force either onto all of them. Any
+		     service that actually wires up FeignCorrelationIdInterceptor/
+		     CorrelationIdRecordInterceptor already has its own direct dependency on these. -->
+		<dependency>
+			<groupId>org.springframework.cloud</groupId>
+			<artifactId>spring-cloud-starter-openfeign</artifactId>
+			<optional>true</optional>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.kafka</groupId>
+			<artifactId>spring-kafka</artifactId>
+			<optional>true</optional>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-test</artifactId>
+			<scope>test</scope>
+		</dependency>
 	</dependencies>
 
 	<build>
