@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Skate Shop — API Reference</title>
+  <meta name="description" content="API reference for the Skate Shop microservices project: product, inventory, order and payment services." />
+  <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@5/swagger-ui.css" />
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+    *, *::before, *::after { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: #0b0d10;
+      color: #e7e9ec;
+      font-family: 'Sora', sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    ::selection { background: #2f5fb8; color: #fff; }
+
+    .wrap { max-width: 1180px; margin: 0 auto; padding: 0 24px; }
+
+    header { padding: 56px 0 0; }
+
+    .eyebrow {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: #5a8dea;
+      margin: 0 0 14px;
+    }
+
+    h1 {
+      font-size: clamp(28px, 4vw, 40px);
+      font-weight: 600;
+      line-height: 1.1;
+      margin: 0 0 14px;
+      letter-spacing: -0.01em;
+    }
+
+    .lede {
+      max-width: 62ch;
+      color: #9aa3ad;
+      font-size: 16px;
+      font-weight: 300;
+      line-height: 1.6;
+      margin: 0 0 24px;
+    }
+
+    .links { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 34px; }
+
+    .links a {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12.5px;
+      color: #e7e9ec;
+      text-decoration: none;
+      border: 1px solid #222831;
+      border-radius: 6px;
+      padding: 8px 14px;
+      transition: border-color .2s, color .2s;
+    }
+    .links a:hover { border-color: #3b76e0; color: #5a8dea; }
+
+    .notice {
+      border-left: 2px solid #3b76e0;
+      background: #11151a;
+      border-radius: 4px;
+      padding: 16px 18px;
+      margin-bottom: 34px;
+      font-size: 14.5px;
+      font-weight: 300;
+      line-height: 1.65;
+      color: #9aa3ad;
+      max-width: 78ch;
+    }
+    .notice strong { color: #e7e9ec; font-weight: 500; }
+    .notice code {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12.5px;
+      background: #0b0d10;
+      border: 1px solid #222831;
+      border-radius: 4px;
+      padding: 2px 6px;
+      color: #e7e9ec;
+    }
+
+    .tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 0;
+    }
+
+    .tab {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12.5px;
+      background: transparent;
+      color: #9aa3ad;
+      border: 1px solid #222831;
+      border-bottom: none;
+      border-radius: 6px 6px 0 0;
+      padding: 10px 16px;
+      cursor: pointer;
+      transition: color .2s, background .2s;
+    }
+    .tab:hover { color: #e7e9ec; }
+    .tab.active { background: #fff; color: #0b0d10; border-color: #fff; font-weight: 500; }
+
+    .panel {
+      background: #fff;
+      border-radius: 0 8px 8px 8px;
+      overflow: hidden;
+      margin-bottom: 60px;
+    }
+
+    /* Swagger UI sits on its own white surface; trim the parts we don't need */
+    .panel .swagger-ui .info { margin: 28px 0 18px; }
+    .panel .swagger-ui .scheme-container { box-shadow: none; padding: 12px 0 18px; background: transparent; }
+    .panel .swagger-ui .info .title small.version-stamp { display: none; }
+
+    footer {
+      border-top: 1px solid #171b21;
+      padding: 26px 0 60px;
+      color: #6b7580;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+    }
+
+    @media (max-width: 640px) {
+      header { padding-top: 36px; }
+      .tab { flex: 1 1 auto; text-align: center; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <p class="eyebrow">Skate Shop · API Reference</p>
+      <h1>Four services, one API surface</h1>
+      <p class="lede">
+        Generated straight from the running services. Everything below is reached through the API Gateway
+        on a single port — the individual service ports are listed too, for when you run it locally.
+      </p>
+
+      <div class="links">
+        <a href="https://github.com/bakaruu/skate-shop" target="_blank" rel="noreferrer">Repository ↗</a>
+        <a href="openapi/product.json">product.json</a>
+        <a href="openapi/inventory.json">inventory.json</a>
+        <a href="openapi/order.json">order.json</a>
+        <a href="openapi/payment.json">payment.json</a>
+      </div>
+
+      <div class="notice">
+        <strong>This is static documentation.</strong> The backend isn't hosted — seven JVMs, Kafka, Redis and
+        PostgreSQL cost more to keep running around the clock than a demo justifies, so "Try it out" is switched
+        off here on purpose rather than left to fail. To exercise the API for real, clone the repository and run
+        <code>docker compose up</code>; every endpoint below answers on <code>localhost:8080</code>, and Swagger's
+        interactive mode works there.
+      </div>
+
+      <div class="tabs" id="tabs">
+        <button class="tab active" data-spec="product">product</button>
+        <button class="tab" data-spec="inventory">inventory</button>
+        <button class="tab" data-spec="order">order</button>
+        <button class="tab" data-spec="payment">payment</button>
+      </div>
+    </header>
+
+    <div class="panel"><div id="swagger"></div></div>
+
+    <footer>Skate Shop · Spring Boot microservices · generated from the OpenAPI specs of each service</footer>
+  </div>
+
+  <script src="https://unpkg.com/swagger-ui-dist@5/swagger-ui-bundle.js" crossorigin></script>
+  <script>
+    function render(spec) {
+      SwaggerUIBundle({
+        url: 'openapi/' + spec + '.json',
+        dom_id: '#swagger',
+        presets: [SwaggerUIBundle.presets.apis],
+        layout: 'BaseLayout',
+        // No server is running behind these docs, so "Try it out" would only ever
+        // produce a network error - hiding it is friendlier than letting it fail.
+        supportedSubmitMethods: [],
+        docExpansion: 'list',
+        defaultModelsExpandDepth: 0,
+        tryItOutEnabled: false
+      });
+    }
+
+    var tabs = document.getElementById('tabs');
+    tabs.addEventListener('click', function (e) {
+      var btn = e.target.closest('.tab');
+      if (!btn) return;
+      Array.prototype.forEach.call(tabs.children, function (t) { t.classList.remove('active'); });
+      btn.classList.add('active');
+      render(btn.dataset.spec);
+    });
+
+    render('product');
+  </script>
+</body>
+</html>
