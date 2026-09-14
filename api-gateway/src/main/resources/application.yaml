@@ -4,6 +4,14 @@ server:
 app:
   cors:
     allowed-origins: ${FRONTEND_ORIGIN:http://localhost:4200}
+  rate-limit:
+    # Per client IP, on every /api/** request (see config/RateLimitFilter): capacity tokens
+    # available up front, refilled continuously at refill-tokens per refill-seconds. 60/minute
+    # comfortably covers normal browsing (the catalog page alone fires 3 requests on load, and
+    # each filter click re-fetches products + stock) while still being a real, working limit.
+    capacity: ${RATE_LIMIT_CAPACITY:60}
+    refill-tokens: ${RATE_LIMIT_REFILL_TOKENS:60}
+    refill-seconds: ${RATE_LIMIT_REFILL_SECONDS:60}
 
 spring:
   application:
@@ -84,3 +92,10 @@ eureka:
       defaultZone: ${EUREKA_URL:http://localhost:8761/eureka/}
   instance:
     prefer-ip-address: true
+
+logging:
+  pattern:
+    # Adds the correlation id (see common's CorrelationIdFilter) next to the log level on every
+    # line, so a request that touches several services can be grepped out of all of their logs
+    # by the same id - "-" when a log line falls outside any request (e.g. at startup).
+    level: "%5p [%X{correlationId:--}]"
