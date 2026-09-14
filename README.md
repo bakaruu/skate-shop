@@ -59,6 +59,9 @@ This project focuses on microservices architecture, event-driven communication a
 | 🔍 Service discovery | Dynamic registration via Eureka |
 | 🛡️ Resilience | Circuit breakers + fallbacks at the gateway for each downstream service |
 | ⏱️ Abandoned checkout recovery | A scheduled sweep cancels orders left `PENDING` past a TTL and releases their stock reservation; the matching Stripe Checkout Session expiry is kept in sync so a stale session can never be paid after the fact |
+| 🔁 Idempotent order creation | An `Idempotency-Key` header on order creation means a retried or double-submitted request returns the original order instead of creating - and reserving stock for - a duplicate |
+| 🚦 Gateway rate limiting | Per-client-IP token bucket (Bucket4j) on every `/api/**` request, ahead of routing |
+| 🔗 Correlation IDs | `X-Correlation-Id` is minted at the gateway and propagated across every HTTP entry point and every Kafka hop, so log lines for one request can be tied together across services — with one known gap: it's lost on the specific Feign calls guarded by a Resilience4j `TimeLimiter` (see `FeignCorrelationIdInterceptor`'s Javadoc) |
 
 ---
 
@@ -90,6 +93,61 @@ Checkout
                        └──▶ order past reservation-ttl-minutes → status CANCELLED
                                 └──▶ inventory-service → releases reserved stock
 ```
+
+---
+
+## 🔄 Distributed Transactions (Saga Pattern)
+
+There's no distributed transaction spanning `order-service`, `inventory-service` and
+`payment-service` — each one commits to its **own** database independently. Consistency across
+all three is achieved with a **saga**: a sequence of local transactions, each with a defined
+compensating action for when a later step fails, instead of an all-or-nothing distributed commit.
+This project mixes both saga styles:
+
+- **Orchestration** for order creation — `order-service` calls the other services directly, in
+  order, and is responsible for undoing the previous step if a later one fails.
+- **Choreography** for everything after checkout — `order-service` and `payment-service` never
+  call `inventory-service` or each other again after that point; each one just reacts
+  independently to Kafka events.
+
+### Order creation (orchestrated)
+
+| Step | Service | If it fails |
+|---|---|---|
+| 1. Fetch authoritative prices | `product-service` | Nothing to undo (read-only) — `order-service` returns 400/503 and stops |
+| 2. Reserve stock | `inventory-service` | Nothing to undo yet — a `409` (insufficient stock) means `order-service` stops before persisting anything |
+| 3. Persist the order as `PENDING` | `order-service` | **Compensating action:** release the reservation from step 2 (best-effort, in a `catch` block) |
+| 4. Publish `order-placed` | Kafka | Informational only — nothing downstream reserves anything off the back of this event, so a failure here needs no compensation |
+
+### After checkout (choreographed via Kafka)
+
+Once the order exists, nothing orchestrates the rest — `payment-service` publishes an event, and
+every interested service reacts to it on its own, with no central coordinator:
+
+| Trigger | `order-service` reacts | `inventory-service` reacts | `notification-service` reacts |
+|---|---|---|---|
+| `payment-completed` | status → `PAID` | stock **decremented for real** (reservation becomes an actual deduction) | sends confirmation |
+| `payment-failed` (Stripe session expired) | status → `CANCELLED` | reservation **released** | sends failure notice |
+| Abandoned checkout, no webhook ever arrives | `OrderExpiryScheduler` cancels it once past `reservation-ttl-minutes` | reservation released (same `order-cancelled` event, `paid=false`) | sends failure notice |
+| Customer hits "back" from Stripe | frontend cancels the pending order immediately, instead of waiting for the TTL sweep above | reservation released right away | — |
+
+The `paid` flag carried on the `order-cancelled` event is what tells `inventory-service` which
+compensating action to run — restock a real deduction, or just release a reservation that was
+never fulfilled. Mixing those up would either oversell (releasing stock that was already sold) or
+silently understock (restocking a reservation that was never deducted in the first place) —
+exactly the kind of thing worth testing directly rather than trusting by inspection; see
+`OrderEventConsumerTest` in `inventory-service` for both branches.
+
+### The one gap this doesn't cover
+
+If stock reservation succeeds but saving the order then fails for some unrelated reason (e.g. the
+database connection drops), `order-service` attempts a best-effort release of that reservation in
+a `catch` block. If *that* release call also fails, the reservation is left stuck — there's no
+order row for `OrderExpiryScheduler` to ever find and expire, since the order was never
+persisted. A production system would close this with an outbox/reconciliation job (e.g.
+`inventory-service` periodically auditing "reserved" totals against orders that actually
+reference them); this project accepts the gap rather than building full saga-orchestration
+tooling for one narrow failure window.
 
 ---
 
