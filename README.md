@@ -263,3 +263,7 @@ CI runs the same command on every push and pull request. Docker images are built
 ## Author
 
 **Aru** — [GitHub](https://github.com/bakaruu)
+
+## License
+
+MIT — see [LICENSE](LICENSE).
