@@ -31,91 +31,70 @@ scope; it is covered in [User Management API](https://github.com/bakaruu/user-ma
 
 ## Architecture
 
+Three pictures, one each: where a request goes, what happens during a checkout, and which events travel afterwards.
+
+### Where a request goes
+
+Nothing reaches a service directly. The browser only ever talks to the gateway, which finds healthy instances
+through Eureka and routes by path.
+
 ```mermaid
 flowchart LR
-    browser[Angular SPA]
-    stripe[Stripe Checkout]
-
-    subgraph edge[Edge]
-        gateway[API Gateway<br/>rate limit · circuit breakers]
-        eureka[Eureka<br/>discovery]
-    end
-
-    subgraph services[Services]
-        product[product-service]
-        inventory[inventory-service]
-        order[order-service]
-        payment[payment-service]
-        notification[notification-service]
-    end
-
-    subgraph data[One store per service]
-        pgp[(product_db)]
-        redis[(Redis cache)]
-        pgi[(inventory_db)]
-        pgo[(order_db)]
-        pgpay[(payment_db)]
-    end
-
-    kafka{{Kafka}}
-
-    browser --> gateway
-    gateway --> product & inventory & order & payment
-    gateway -. looks up .-> eureka
-    order -- Feign: prices --> product
-    order -- Feign: reserve / release --> inventory
-    payment -- Feign: order --> order
-    payment -- creates session --> stripe
-    stripe -- signed webhook --> gateway
-
-    product --- pgp & redis
-    inventory --- pgi
-    order --- pgo
-    payment --- pgpay
-
-    order -- order-placed · order-cancelled --> kafka
-    payment -- payment-completed · payment-failed --> kafka
-    kafka --> order & inventory & notification
+    spa["Angular SPA"] --> gw["<b>API Gateway</b> :8080<br/>rate limit · circuit breakers"]
+    gw -.->|"looks up instances"| eur["Eureka :8761"]
+    gw -->|"/api/products"| prod["product-service"] --> pdb[("product_db")]
+    prod --> redis[("Redis<br/>5-minute cache")]
+    gw -->|"/api/inventory"| inv["inventory-service"] --> idb[("inventory_db")]
+    gw -->|"/api/orders"| ord["order-service"] --> odb[("order_db")]
+    gw -->|"/api/payments"| pay["payment-service"] --> paydb[("payment_db")]
+    pay --> stripe["Stripe Checkout"]
 ```
 
-Every service registers in Eureka, and the gateway routes `/api/products`, `/api/inventory`, `/api/orders` and
-`/api/payments` to healthy instances. Each service owns its PostgreSQL database and its Flyway migrations. The only
-code they share is the `common` module: event types, error responses and correlation ID propagation.
+Each service owns its database and its Flyway migrations, and no service reads another's tables: when
+`order-service` needs a price it asks `product-service` over HTTP (Feign), never `product_db`. The only shared code
+is the `common` module: event types, error responses and correlation ID propagation.
 
 ![Six services registered in Eureka](docs/images/eureka.png)
 
-### Checkout, step by step
+### What happens during a checkout
 
 ```mermaid
 sequenceDiagram
     autonumber
     participant B as Browser
     participant O as order-service
-    participant P as product-service
     participant I as inventory-service
-    participant Pay as payment-service
+    participant P as payment-service
     participant S as Stripe
     participant K as Kafka
-    participant N as notification-service
 
-    B->>O: POST /api/orders (Idempotency-Key)
-    O->>P: batch prices
+    B->>O: POST /api/orders + Idempotency-Key
+    O->>O: prices from product-service
     O->>I: reserve stock
-    O->>O: save order PENDING
-    O-->>K: order-placed
-    B->>Pay: POST /api/payments/checkout
-    Pay->>S: create Checkout Session (expires with the reservation)
-    B->>S: pay with card
-    S->>Pay: webhook checkout.session.completed
-    Pay-->>K: payment-completed
-    K-->>O: order PAID
-    K-->>I: reservation becomes a deduction
-    K-->>N: payment confirmation
+    O->>O: save the order as PENDING
+    B->>P: POST /api/payments/checkout
+    P->>S: Checkout Session, expires with the reservation
+    B->>S: pays with card
+    S->>P: webhook checkout.session.completed
+    P-->>K: payment-completed
+    K-->>O: order becomes PAID
+    K-->>I: the reservation becomes a deduction
 ```
 
 If the session expires instead, `payment-failed` makes `order-service` cancel the order and publish
 `order-cancelled`, and `inventory-service` releases the reservation. If no webhook ever arrives,
 `OrderExpiryScheduler` does the same once the TTL has passed.
+
+### Which events travel
+
+After the order exists, no service calls another: each one reacts to what it reads from Kafka.
+
+| Topic | Published by | Read by | What the reader does |
+|---|---|---|---|
+| `order-placed` | order-service | notification-service | Order confirmation |
+| `payment-completed` | payment-service | order-service · inventory-service · notification-service | Status → `PAID` · reservation becomes a deduction · confirmation |
+| `payment-failed` | payment-service | order-service · notification-service | Status → `CANCELLED`, which publishes `order-cancelled` · failure notice |
+| `order-cancelled` | order-service | inventory-service · notification-service | Restock or release, depending on the `paid` flag · failure notice |
 
 ## Edge cases handled
 
